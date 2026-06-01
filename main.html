@@ -1,0 +1,2354 @@
+<!doctype html>
+<html lang="en-IN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FinCalc - SIP, SWP and Lumpsum Calculator with Tax and Inflation</title>
+  <meta name="description"
+    content="Use FinCalc to calculate SIP, step-up SIP, SWP and lumpsum mutual fund returns with tax, inflation-adjusted value, charts and real purchasing power estimates.">
+  <meta name="keywords"
+    content="SIP calculator, SWP calculator, lumpsum calculator, mutual fund calculator, inflation adjusted returns, post tax returns India">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://fincalc.example.com/">
+  <meta property="og:title" content="FinCalc - SIP, SWP and Lumpsum Calculator">
+  <meta property="og:description"
+    content="Calculate mutual fund returns after tax and inflation with clear charts for SIP, SWP and lumpsum investments.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_IN">
+  <meta name="twitter:card" content="summary">
+  <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"FinCalc","applicationCategory":"FinanceApplication","operatingSystem":"Any","description":"SIP, SWP and lumpsum mutual fund calculator with tax and inflation-adjusted results for Indian investors.","offers":{"@type":"Offer","price":"0","priceCurrency":"INR"}}
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,1,0"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    :root {
+      --bg: #F4F6FA;
+      --surface: #fff;
+      --border: #E4E8F0;
+      --text: #0A0F1E;
+      --muted: #6B7A99;
+      --muted2: #9BA8BF;
+      --green: #16A34A;
+      --green-lt: #F0FDF4;
+      --green-border: rgba(22, 163, 74, .2);
+      --indigo: #6366F1;
+      --amber: #D97706;
+      --sh: 0 1px 3px rgba(0, 0, 0, .05), 0 4px 16px rgba(0, 0, 0, .04);
+      --sh-lg: 0 8px 40px rgba(0, 0, 0, .1);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      height: 62px;
+      background: rgba(255, 255, 255, .9);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+    }
+
+    .h-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .logo {
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: -.5px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      text-decoration: none;
+      margin-right: 20px
+    }
+
+    .logo-box {
+      width: 33px;
+      height: 33px;
+      background: var(--text);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .logo-box span {
+      color: #fff;
+      font-size: 19px
+    }
+
+    .logo-name em {
+      color: var(--green);
+      font-style: normal
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex: 1
+    }
+
+    .nav-item {
+      position: relative;
+      padding: 7px 13px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      transition: all .15s;
+      user-select: none
+    }
+
+    .nav-item:hover,
+    .nav-item.open {
+      color: var(--text);
+      background: #F0F2F7
+    }
+
+    .nav-item .arr {
+      font-size: 18px;
+      transition: transform .2s
+    }
+
+    .nav-item:hover .arr,
+    .nav-item.open .arr {
+      transform: rotate(180deg)
+    }
+
+    .dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 6px;
+      box-shadow: var(--sh-lg);
+      min-width: 220px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(4px);
+      transition: all .18s
+    }
+
+    .nav-item:hover .dropdown,
+    .nav-item.open .dropdown {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0)
+    }
+
+    .dd-item {
+      padding: 10px 11px;
+      border-radius: 9px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      transition: background .1s
+    }
+
+    .dd-item:hover {
+      background: var(--bg)
+    }
+
+    .dd-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: var(--green-lt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0
+    }
+
+    .dd-icon span {
+      color: var(--green);
+      font-size: 18px
+    }
+
+    .dd-text div:last-child {
+      font-size: 11.5px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-top: 1px
+    }
+
+    .h-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .btn-login {
+      padding: 8px 18px;
+      background: var(--text);
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity .15s;
+      font-family: 'Inter', sans-serif
+    }
+
+    .account-btn {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      justify-content: center;
+      border-radius: 10px
+    }
+
+    .btn-login:hover {
+      opacity: .82
+    }
+
+    .user-chip {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600
+    }
+
+    .account-menu {
+      position: relative
+    }
+
+    .account-pop {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      min-width: 190px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: var(--sh-lg);
+      display: none
+    }
+
+    .account-pop.open {
+      display: block
+    }
+
+    .account-name {
+      font-size: 13px;
+      font-weight: 800;
+      padding: 8px 9px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 6px
+    }
+
+    .account-action {
+      width: 100%;
+      border: none;
+      background: transparent;
+      border-radius: 9px;
+      padding: 9px;
+      font: 700 13px 'Inter', sans-serif;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-align: left
+    }
+
+    .account-action:hover {
+      background: var(--bg)
+    }
+
+    .btn-logout {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      cursor: pointer
+    }
+
+    /* ── PAGE WRAPPER ── */
+    .page {
+      padding-top: 80px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding-bottom: 60px
+    }
+
+    /* ── PAGE HEADER ── */
+    .ph {
+      padding: 36px 28px 20px
+    }
+
+    .ph h1 {
+      font-size: 27px;
+      font-weight: 800;
+      letter-spacing: -.6px;
+      margin-bottom: 5px
+    }
+
+    .ph p {
+      color: var(--muted);
+      font-size: 14.5px
+    }
+
+    /* ── CALC BODY ── */
+    .cbody {
+      display: grid;
+      grid-template-columns: 410px 1fr;
+      gap: 20px;
+      padding: 0 28px;
+      align-items: start
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: var(--sh)
+    }
+
+    /* ── MODE TOGGLE ── */
+    .mtoggle {
+      display: flex;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 18px;
+      gap: 2px
+    }
+
+    .mbtn {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      color: var(--muted);
+      transition: all .15s;
+      border: none;
+      background: none;
+      font-family: 'Inter', sans-serif
+    }
+
+    .mbtn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 5px rgba(0, 0, 0, .09)
+    }
+
+    /* ── STEP-UP PILLS ── */
+    .su-row {
+      margin-bottom: 18px
+    }
+
+    .su-pills {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 8px
+    }
+
+    .su-pill {
+      padding: 5px 13px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: none;
+      color: var(--muted);
+      transition: all .15s;
+      font-family: 'Inter', sans-serif
+    }
+
+    .su-pill.active {
+      border-color: var(--green);
+      background: var(--green-lt);
+      color: var(--green)
+    }
+
+    /* ── SECTION LABEL ── */
+    .slbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted2);
+      letter-spacing: .9px;
+      text-transform: uppercase;
+      margin-bottom: 14px
+    }
+
+    /* ── INPUT GROUP ── */
+    .ig {
+      margin-bottom: 17px
+    }
+
+    .il {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px
+    }
+
+    .il .lbl {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted)
+    }
+
+    .il .vi {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 10px;
+      width: 115px;
+      text-align: right;
+      outline: none;
+      transition: border-color .15s;
+      font-family: 'Inter', sans-serif
+    }
+
+    .il .vi:focus {
+      border-color: var(--green)
+    }
+
+    input[type=range] {
+      width: 100%;
+      height: 4px;
+      appearance: none;
+      -webkit-appearance: none;
+      border-radius: 4px;
+      cursor: pointer;
+      outline: none;
+      background: transparent;
+      --range-fill: 50%;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(to right, #6366F1 var(--range-fill), #DDE3F5 var(--range-fill));
+      border: 1px solid #E4E8F0;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      margin-top: -7px;
+      background: linear-gradient(135deg, #6366F1 0%, #059669 100%);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+      border: 2px solid #fff;
+    }
+
+    input[type=range]::-moz-range-track {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: #DDE3F5;
+      border: 1px solid #E4E8F0;
+    }
+
+    input[type=range]::-moz-range-progress {
+      height: 6px;
+      border-radius: 999px 0 0 999px;
+      background: #6366F1;
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      background: linear-gradient(135deg, #6366F1 0%, #059669 100%);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+      border: 2px solid #fff;
+    }
+
+    /* ── DIVIDER ── */
+    .div {
+      height: 1px;
+      background: var(--border);
+      margin: 18px 0
+    }
+
+    /* ── RESULTS GRID ── */
+    .summary-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px
+    }
+
+    .summary-head {
+      padding: 20px;
+      border-radius: 18px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: grid;
+      gap: 10px
+    }
+
+    .summary-head.profit {
+      border-color: rgba(22, 163, 74, .25)
+    }
+
+    .summary-head.loss {
+      border-color: rgba(220, 38, 38, .25)
+    }
+
+    .summary-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted2)
+    }
+
+    .summary-value {
+      font-size: 36px;
+      font-weight: 900;
+      line-height: 1.05;
+      color: var(--text)
+    }
+
+    .summary-head.profit .summary-value {
+      color: var(--green)
+    }
+
+    .summary-head.loss .summary-value {
+      color: #DC2626
+    }
+
+    .summary-note {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6
+    }
+
+    .rg {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 11px;
+      margin-bottom: 4px
+    }
+
+    .rc {
+      padding: 13px 15px;
+      border-radius: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border)
+    }
+
+    .rc.green {
+      background: var(--green-lt);
+      border-color: var(--green-border)
+    }
+
+    .rc.full {
+      grid-column: 1/-1
+    }
+
+    .rc .rl {
+      font-size: 11.5px;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 4px
+    }
+
+    .rc .rv {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -.5px
+    }
+
+    .rc.green .rv {
+      color: var(--green)
+    }
+
+    .rc .rs {
+      font-size: 11px;
+      color: var(--muted2);
+      margin-top: 2px
+    }
+
+    /* ── CHARTS ── */
+    .ccol {
+      display: flex;
+      flex-direction: column;
+      gap: 20px
+    }
+
+    .cc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: var(--sh)
+    }
+
+    .ct {
+      font-size: 14.5px;
+      font-weight: 700;
+      margin-bottom: 3px
+    }
+
+    .cs {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-bottom: 18px
+    }
+
+    .cw {
+      position: relative;
+      height: 270px
+    }
+
+    .cw-sm {
+      position: relative;
+      height: 210px
+    }
+
+    /* ── NOTE ── */
+    .note {
+      font-size: 12px;
+      color: #92400E;
+      margin-top: 10px;
+      padding: 9px 12px;
+      background: #FFFBEB;
+      border-radius: 8px;
+      border: 1px solid #FDE68A;
+      line-height: 1.5
+    }
+
+    .auth-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 15, 30, .42);
+      z-index: 400;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px
+    }
+
+    .auth-modal {
+      width: min(420px, 100%);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--sh-lg);
+      padding: 22px
+    }
+
+    .auth-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px
+    }
+
+    .auth-head h2 {
+      font-size: 20px;
+      letter-spacing: -.4px;
+      margin-bottom: 3px
+    }
+
+    .auth-head p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 9px;
+      background: var(--bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text)
+    }
+
+    .auth-tabs {
+      display: flex;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 16px
+    }
+
+    .auth-tab {
+      flex: 1;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font: 600 13px 'Inter', sans-serif;
+      color: var(--muted);
+      cursor: pointer
+    }
+
+    .auth-tab.active {
+      background: #fff;
+      color: var(--text);
+      box-shadow: 0 1px 5px rgba(0, 0, 0, .09)
+    }
+
+    .field {
+      margin-bottom: 12px
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 6px
+    }
+
+    .field input {
+      width: 100%;
+      height: 42px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      padding: 0 12px;
+      font: 500 14px 'Inter', sans-serif;
+      outline: none
+    }
+
+    .field input:focus {
+      border-color: var(--green)
+    }
+
+    .select-control {
+      height: 32px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      font: 700 13px 'Inter', sans-serif;
+      padding: 0 8px;
+      outline: none
+    }
+
+    .select-control:focus {
+      border-color: var(--green)
+    }
+
+    .auth-primary {
+      width: 100%;
+      height: 42px;
+      border: none;
+      border-radius: 9px;
+      background: var(--text);
+      color: #fff;
+      font: 700 14px 'Inter', sans-serif;
+      cursor: pointer;
+      margin-top: 4px
+    }
+
+    .auth-secondary {
+      width: 100%;
+      height: 38px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text);
+      font: 700 13px 'Inter', sans-serif;
+      cursor: pointer;
+      margin-top: 9px
+    }
+
+    .auth-msg {
+      min-height: 18px;
+      margin-top: 10px;
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.45
+    }
+
+    .auth-msg.err {
+      color: #B91C1C
+    }
+
+    .auth-msg.ok {
+      color: var(--green)
+    }
+
+    .history-actions {
+      display: none;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap
+    }
+
+    .mini-btn {
+      height: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text);
+      font: 700 13px 'Inter', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px
+    }
+
+    .mini-btn.primary {
+      background: var(--text);
+      border-color: var(--text);
+      color: #fff
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 440px;
+      overflow: auto
+    }
+
+    .history-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: var(--bg)
+    }
+
+    .history-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px
+    }
+
+    .history-title {
+      font-weight: 800;
+      font-size: 13.5px
+    }
+
+    .history-date {
+      font-size: 11.5px;
+      color: var(--muted)
+    }
+
+    .history-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px
+    }
+
+    .history-stat {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px
+    }
+
+    .history-stat span {
+      display: block;
+      font-size: 10.5px;
+      color: var(--muted);
+      margin-bottom: 2px
+    }
+
+    .history-stat strong {
+      font-size: 13px
+    }
+
+    .history-empty {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: 10px
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    @media(max-width:860px) {
+      .cbody {
+        grid-template-columns: 1fr
+      }
+
+      header {
+        padding: 0 14px
+      }
+
+      .ph,
+      .cbody {
+        padding-left: 14px;
+        padding-right: 14px
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══ HEADER ═══ -->
+  <header>
+    <div class="h-inner">
+      <a href="#" class="logo">
+        <div class="logo-box"><span class="material-symbols-rounded">show_chart</span></div>
+        <span class="logo-name">Fin<em>Calc</em></span>
+      </a>
+      <nav>
+        <div class="nav-item" id="investMenu" onclick="toggleNavMenu(event,'investMenu')">
+          Invest <span class="material-symbols-rounded arr">expand_more</span>
+          <div class="dropdown">
+            <div class="dd-item" onclick="selectCalc(event,'sip')">
+              <div class="dd-icon"><span class="material-symbols-rounded">autorenew</span></div>
+              <div class="dd-text">
+                <div>SIP Calculator</div>
+                <div>Systematic Investment Plan</div>
+              </div>
+            </div>
+            <div class="dd-item" onclick="selectCalc(event,'lumpsum')">
+              <div class="dd-icon"><span class="material-symbols-rounded">savings</span></div>
+              <div class="dd-text">
+                <div>Lumpsum Calculator</div>
+                <div>One-time investment</div>
+              </div>
+            </div>
+            <div class="dd-item" onclick="selectCalc(event,'fd')">
+              <div class="dd-icon"><span class="material-symbols-rounded">account_balance</span></div>
+              <div class="dd-text">
+                <div>FD Calculator</div>
+                <div>Fixed deposit maturity</div>
+              </div>
+            </div>
+            <div class="dd-item" onclick="selectCalc(event,'rd')">
+              <div class="dd-icon"><span class="material-symbols-rounded">calendar_month</span></div>
+              <div class="dd-text">
+                <div>RD Calculator</div>
+                <div>Recurring monthly deposit</div>
+              </div>
+            </div>
+            <div class="dd-item" onclick="selectCalc(event,'ppf')">
+              <div class="dd-icon"><span class="material-symbols-rounded">shield</span></div>
+              <div class="dd-text">
+                <div>PPF Calculator</div>
+                <div>Public Provident Fund</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="nav-item" id="withdrawMenu" onclick="toggleNavMenu(event,'withdrawMenu')">
+          Withdraw <span class="material-symbols-rounded arr">expand_more</span>
+          <div class="dropdown">
+            <div class="dd-item" onclick="selectCalc(event,'swp')">
+              <div class="dd-icon"><span class="material-symbols-rounded">account_balance_wallet</span></div>
+              <div class="dd-text">
+                <div>SWP Calculator</div>
+                <div>Systematic Withdrawal Plan</div>
+              </div>
+            </div>
+            <div class="dd-item" onclick="selectCalc(event,'emi')">
+              <div class="dd-icon"><span class="material-symbols-rounded">payments</span></div>
+              <div class="dd-text">
+                <div>Loan Calculator</div>
+                <div>EMI and repayment planner</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div class="h-right">
+        <div class="account-menu">
+          <button class="btn-login account-btn" id="loginBtn" onclick="openAuth()" aria-label="Login"><span
+              class="material-symbols-rounded" style="font-size:19px">person</span></button>
+          <button class="btn-login account-btn hidden" id="accountBtn" onclick="toggleAccountMenu(event)"
+            aria-label="Account"><span class="material-symbols-rounded"
+              style="font-size:19px">account_circle</span></button>
+          <div class="account-pop" id="accountPop">
+            <div class="account-name" id="userName"></div>
+            <button class="account-action" onclick="logout()"><span class="material-symbols-rounded"
+                style="font-size:17px">logout</span>Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="auth-backdrop hidden" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="auth-modal">
+      <div class="auth-head">
+        <div>
+          <h2 id="authTitle">Login to FinCalc</h2>
+          <p id="authSub">Use a username with no spaces and your password.</p>
+        </div>
+        <button class="icon-btn" onclick="closeAuth()" aria-label="Close login"><span
+            class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="loginTab" onclick="setAuthMode('login')">Login</button>
+        <button class="auth-tab" id="signupTab" onclick="setAuthMode('signup')">Sign up</button>
+      </div>
+      <div class="field">
+        <label for="authUsername">Username</label>
+        <input id="authUsername" autocomplete="username" placeholder="username_without_spaces">
+      </div>
+      <div class="field">
+        <label for="authPass">Password</label>
+        <input id="authPass" type="password" autocomplete="current-password" placeholder="Account password">
+      </div>
+      <div class="field hidden" id="confirmField">
+        <label for="authConfirm">Confirm password</label>
+        <input id="authConfirm" type="password" autocomplete="new-password" placeholder="Repeat password">
+      </div>
+      <button class="auth-primary" id="authMainBtn" onclick="submitAuth()">Continue</button>
+      <div class="auth-msg" id="authMsg"></div>
+    </div>
+  </div>
+
+  <div class="auth-backdrop hidden" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+    <div class="auth-modal">
+      <div class="auth-head">
+        <div>
+          <h2 id="historyTitle">Calculation History</h2>
+          <p>Your saved SIP, SWP and lumpsum results stay with your account.</p>
+        </div>
+        <button class="icon-btn" onclick="closeHistory()" aria-label="Close history"><span
+            class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="history-list" id="historyList"></div>
+      <div class="auth-msg" id="historyMsg"></div>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="page">
+    <div class="ph">
+      <h1 id="pgTitle">SIP Calculator</h1>
+      <p id="pgSub">Free SIP calculator for India with post-tax, inflation-adjusted mutual fund returns, step-up options
+        and real-time graphs</p>
+      <div class="history-actions" id="historyActions">
+        <button class="mini-btn primary" onclick="saveCalculation()"><span class="material-symbols-rounded"
+            style="font-size:17px">bookmark_add</span>Save result</button>
+        <button class="mini-btn" onclick="openHistory()"><span class="material-symbols-rounded"
+            style="font-size:17px">history</span>History</button>
+        <button class="mini-btn" onclick="saveLocal()" title="Save current inputs to local storage"><span
+            class="material-symbols-rounded" style="font-size:17px">save</span>Save Locally</button>
+        <button class="mini-btn" onclick="openLocalHistory()" title="Open local saved calculations"><span
+            class="material-symbols-rounded" style="font-size:17px">folder_open</span>Local History</button>
+      </div>
+    </div>
+
+    <!-- ══ SIP ══ -->
+    <div id="calc-sip" class="cbody">
+      <div class="card">
+        <div class="mtoggle">
+          <button class="mbtn active" id="sipModeSimple" onclick="setSipMode('simple')">Simple SIP</button>
+          <button class="mbtn" id="sipModeStepup" onclick="setSipMode('stepup')">Step-Up SIP</button>
+        </div>
+        <div id="suSection" class="su-row hidden">
+          <div class="slbl">Step-Up Type</div>
+          <div class="su-pills">
+            <button class="su-pill active" id="suBtnPct" onclick="setSuType('pct')">% Annual</button>
+            <button class="su-pill" id="suBtnFixed" onclick="setSuType('fixed')">Fixed Amount</button>
+            <button class="su-pill" id="suBtnInfl" onclick="setSuType('infl')">Inflation-Linked</button>
+          </div>
+        </div>
+        <div class="slbl">Investment Details</div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Initial Lumpsum (₹)</span><input class="vi" id="sipInitI" type="number"
+              value="0" oninput="fromInp('sipInit',this.value)"></div>
+          <input type="range" id="sipInit" min="0" max="50000000" step="1000" value="0" oninput="fromSlider('sipInit')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Monthly Investment (₹)</span><input class="vi" id="sipAmtI" type="number"
+              value="10000" oninput="fromInp('sipAmt',this.value)"></div>
+          <input type="range" id="sipAmt" min="500" max="200000" step="500" value="10000"
+            oninput="fromSlider('sipAmt')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Expected Return (% p.a.)</span><input class="vi" id="sipRetI" type="number"
+              value="12" oninput="fromInp('sipRet',this.value)"></div>
+          <input type="range" id="sipRet" min="1" max="30" step="0.5" value="12" oninput="fromSlider('sipRet')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Time Period (Years)</span><input class="vi" id="sipYrsI" type="number"
+              value="15" oninput="fromInp('sipYrs',this.value)"></div>
+          <input type="range" id="sipYrs" min="1" max="40" step="1" value="15" oninput="fromSlider('sipYrs')">
+        </div>
+        <div class="ig hidden" id="rowPct">
+          <div class="il"><span class="lbl">Annual Step-Up (%)</span><input class="vi" id="suPctI" type="number"
+              value="10" oninput="fromInp('suPct',this.value)"></div>
+          <input type="range" id="suPct" min="1" max="50" step="1" value="10" oninput="fromSlider('suPct')">
+        </div>
+        <div class="ig hidden" id="rowFixed">
+          <div class="il"><span class="lbl">Annual Increase (₹)</span><input class="vi" id="suFixI" type="number"
+              value="1000" oninput="fromInp('suFix',this.value)"></div>
+          <input type="range" id="suFix" min="100" max="50000" step="100" value="1000" oninput="fromSlider('suFix')">
+        </div>
+        <div class="div"></div>
+        <div class="slbl">Adjustments</div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Inflation Rate (%)</span><input class="vi" id="sipInflI" type="number"
+              value="6" oninput="fromInp('sipInfl',this.value)"></div>
+          <input type="range" id="sipInfl" min="0" max="15" step="0.5" value="6" oninput="fromSlider('sipInfl')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Tax on Gains (%)</span><input class="vi" id="sipTaxI" type="number"
+              value="12.5" oninput="fromInp('sipTax',this.value)"></div>
+          <input type="range" id="sipTax" min="0" max="30" step="0.5" value="12.5" oninput="fromSlider('sipTax')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Expense Ratio (% p.a.)</span><input class="vi" id="sipExpI" type="number"
+              value="0" oninput="fromInp('sipExp',this.value)"></div>
+          <input type="range" id="sipExp" min="0" max="5" step="0.01" value="0" oninput="fromSlider('sipExp')">
+        </div>
+        <div class="note">💡 Monthly SIP is added each month. Expected return is applied once per year; expense ratio is
+          deducted at each year-end. Tax applies once at maturity on gains above ₹1.25 lakh (LTCG exemption for equity
+          funds). Inflation adjustment is applied last.</div>
+      </div>
+      <div class="ccol">
+        <div class="card">
+          <div class="slbl">Results Summary</div>
+          <div class="summary-panel">
+            <div class="summary-head" id="sSummaryHead">
+              <div class="summary-title" id="sProfitLabel">Profit</div>
+              <div class="summary-value" id="sProfitLoss">—</div>
+              <div class="summary-note" id="sProfitNote">Post-tax inflation-adjusted purchasing power compared to the
+                invested amount in today's rupees.</div>
+            </div>
+            <div class="rg">
+              <div class="rc">
+                <div class="rl">Total Invested</div>
+                <div class="rv" id="sInv">—</div>
+              </div>
+              <div class="rc">
+                <div class="rl">Post-Tax Value</div>
+                <div class="rv" id="sPostTax">—</div>
+              </div>
+            </div>
+            <div class="rg">
+              <div class="rc">
+                <div class="rl">Total Value (Nominal)</div>
+                <div class="rv" id="sTot">—</div>
+                <div class="rs">Corpus at maturity</div>
+              </div>
+              <div class="rc">
+                <div class="rl">Post-Tax Inflation-Adjusted Value</div>
+                <div class="rv" id="sInflAdj">—</div>
+              </div>
+            </div>
+            <div class="rg">
+              <div class="rc">
+                <div class="rl">Tax on Gains</div>
+                <div class="rv" id="sTax">—</div>
+                <div class="rs">Includes ₹1.25L exemption on total gains</div>
+              </div>
+              <div class="rc">
+                <div class="rl">Estimated Returns</div>
+                <div class="rv" id="sRet">—</div>
+              </div>
+            </div>
+            <div class="rg">
+              <div class="rc full">
+                <div class="rl">Total Invested (Inflation Adj. — Today's ₹)</div>
+                <div class="rv" id="sInvInflAdj">—</div>
+                <div class="rs">What your total contributions are worth in today's rupees</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cc">
+          <div class="ct">Portfolio Growth Over Time</div>
+          <div class="cs">Nominal value · Post-tax inflation-adjusted · Amount invested</div>
+          <div class="cw"><canvas id="sipGC"></canvas></div>
+        </div>
+        <div class="cc">
+          <div class="ct">Wealth Breakdown</div>
+          <div class="cs">Invested capital vs. returns vs. tax</div>
+          <div class="cw-sm"><canvas id="sipDC"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SWP ══ -->
+    <div id="calc-swp" class="cbody hidden">
+      <div class="card">
+        <div class="slbl">Portfolio Details</div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Initial Corpus (₹)</span><input class="vi" id="swpCorI" type="number"
+              value="5000000" oninput="fromInp('swpCor',this.value)"></div><input type="range" id="swpCor" min="100000"
+            max="50000000" step="100000" value="5000000" oninput="fromSlider('swpCor')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Monthly Withdrawal (₹)</span><input class="vi" id="swpWdI" type="number"
+              value="25000" oninput="fromInp('swpWd',this.value)"></div><input type="range" id="swpWd" min="1000"
+            max="500000" step="1000" value="25000" oninput="fromSlider('swpWd')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Expected Return (% p.a.)</span><input class="vi" id="swpRetI" type="number"
+              value="10" oninput="fromInp('swpRet',this.value)"></div><input type="range" id="swpRet" min="1" max="25"
+            step="0.5" value="10" oninput="fromSlider('swpRet')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Time Period (Years)</span><input class="vi" id="swpYrsI" type="number"
+              value="20" oninput="fromInp('swpYrs',this.value)"></div><input type="range" id="swpYrs" min="1" max="40"
+            step="1" value="20" oninput="fromSlider('swpYrs')">
+        </div>
+        <div class="div"></div>
+        <div class="slbl">Adjustments</div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Inflation Rate (%)</span><input class="vi" id="swpInflI" type="number"
+              value="6" oninput="fromInp('swpInfl',this.value)"></div><input type="range" id="swpInfl" min="0" max="15"
+            step="0.5" value="6" oninput="fromSlider('swpInfl')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Tax on Withdrawals (%)</span><input class="vi" id="swpTaxI" type="number"
+              value="10" oninput="fromInp('swpTax',this.value)"></div><input type="range" id="swpTax" min="0" max="30"
+            step="0.5" value="10" oninput="fromSlider('swpTax')">
+        </div>
+      </div>
+      <div class="ccol">
+        <div class="card">
+          <div class="slbl">Results Summary</div>
+          <div class="rg">
+            <div class="rc">
+              <div class="rl">Total Withdrawn</div>
+              <div class="rv" id="wwTot">—</div>
+            </div>
+            <div class="rc">
+              <div class="rl">Remaining Corpus</div>
+              <div class="rv" id="wwRem">—</div>
+            </div>
+            <div class="rc">
+              <div class="rl">Corpus Lasts</div>
+              <div class="rv" id="wwLasts">—</div>
+              <div class="rs">Based on current withdrawal rate</div>
+            </div>
+            <div class="rc">
+              <div class="rl">Post-Tax Monthly</div>
+              <div class="rv" id="wwPostTax">—</div>
+              <div class="rs">Effective monthly in-hand</div>
+            </div>
+            <div class="rc green full">
+              <div class="rl">Post-Tax Inflation-Adjusted Monthly</div>
+              <div class="rv" id="wwInflAdj">—</div>
+              <div class="rs">Highlighted real monthly in-hand value</div>
+            </div>
+          </div>
+        </div>
+        <div class="cc">
+          <div class="ct">Corpus Depletion Over Time</div>
+          <div class="cs">How your portfolio reduces year by year</div>
+          <div class="cw"><canvas id="swpGC"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ LUMPSUM ══ -->
+    <div id="calc-lumpsum" class="cbody hidden">
+      <div class="card">
+        <div class="slbl">Investment Details</div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Investment Amount (₹)</span><input class="vi" id="lsAmtI" type="number"
+              value="500000" oninput="fromInp('lsAmt',this.value)"></div><input type="range" id="lsAmt" min="10000"
+            max="50000000" step="10000" value="500000" oninput="fromSlider('lsAmt')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Expected Return (% p.a.)</span><input class="vi" id="lsRetI" type="number"
+              value="12" oninput="fromInp('lsRet',this.value)"></div><input type="range" id="lsRet" min="1" max="30"
+            step="0.5" value="12" oninput="fromSlider('lsRet')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Time Period (Years)</span><input class="vi" id="lsYrsI" type="number"
+              value="15" oninput="fromInp('lsYrs',this.value)"></div><input type="range" id="lsYrs" min="1" max="40"
+            step="1" value="15" oninput="fromSlider('lsYrs')">
+        </div>
+        <div class="div"></div>
+        <div class="slbl">Adjustments</div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Inflation Rate (%)</span><input class="vi" id="lsInflI" type="number"
+              value="6" oninput="fromInp('lsInfl',this.value)"></div><input type="range" id="lsInfl" min="0" max="15"
+            step="0.5" value="6" oninput="fromSlider('lsInfl')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Tax on Gains (%)</span><input class="vi" id="lsTaxI" type="number"
+              value="12.5" oninput="fromInp('lsTax',this.value)"></div><input type="range" id="lsTax" min="0" max="30"
+            step="0.5" value="12.5" oninput="fromSlider('lsTax')">
+        </div>
+        <div class="note">💡 LTCG applies at 12.5% on equity gains exceeding ₹1.25 Lakh per year. Set 0% for debt
+          instruments.</div>
+      </div>
+      <div class="ccol">
+        <div class="card">
+          <div class="slbl">Results Summary</div>
+          <div class="rg">
+            <div class="rc">
+              <div class="rl">Amount Invested</div>
+              <div class="rv" id="llInv">—</div>
+            </div>
+            <div class="rc">
+              <div class="rl">Estimated Returns</div>
+              <div class="rv" id="llRet">—</div>
+            </div>
+            <div class="rc">
+              <div class="rl">Total Value (Nominal)</div>
+              <div class="rv" id="llTot">—</div>
+              <div class="rs">Corpus at maturity</div>
+            </div>
+            <div class="rc green">
+              <div class="rl">Post-Tax Inflation-Adjusted Value</div>
+              <div class="rv" id="llInflAdj">—</div>
+              <div class="rs">Highlighted real value after tax</div>
+            </div>
+            <div class="rc full">
+              <div class="rl">Post-Tax Value</div>
+              <div class="rv" id="llPostTax">—</div>
+              <div class="rs">After estimated tax deduction on gains</div>
+            </div>
+          </div>
+        </div>
+        <div class="cc">
+          <div class="ct">Lumpsum Growth Over Time</div>
+          <div class="cs">Nominal · Post-tax inflation-adjusted · Principal</div>
+          <div class="cw"><canvas id="lsGC"></canvas></div>
+        </div>
+        <div class="cc">
+          <div class="ct">Return Breakdown</div>
+          <div class="cs">Principal vs. returns vs. tax</div>
+          <div class="cw-sm"><canvas id="lsDC"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMI -->
+    <div id="calc-emi" class="cbody hidden">
+      <div class="card">
+        <div class="slbl">Loan Details</div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Loan Amount (₹)</span><input class="vi" id="emiAmtI" type="number"
+              value="2500000" oninput="fromInp('emiAmt',this.value)"></div><input type="range" id="emiAmt" min="50000"
+            max="50000000" step="50000" value="2500000" oninput="fromSlider('emiAmt')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Interest Rate (% p.a.)</span><input class="vi" id="emiRateI" type="number"
+              value="8.5" oninput="fromInp('emiRate',this.value)"></div><input type="range" id="emiRate" min="0"
+            max="24" step="0.1" value="8.5" oninput="fromSlider('emiRate')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Loan Tenure (Years)</span><input class="vi" id="emiYrsI" type="number"
+              value="20" oninput="fromInp('emiYrs',this.value)"></div><input type="range" id="emiYrs" min="1" max="30"
+            step="1" value="20" oninput="fromSlider('emiYrs')">
+        </div>
+        <div class="note">EMI assumes a fixed interest rate and equal monthly payments through the full tenure.</div>
+      </div>
+      <div class="ccol">
+        <div class="card">
+          <div class="slbl">Results Summary</div>
+          <div class="rg">
+            <div class="rc green">
+              <div class="rl">Monthly EMI</div>
+              <div class="rv" id="eEmi">—</div>
+              <div class="rs">Fixed monthly payment</div>
+            </div>
+            <div class="rc">
+              <div class="rl">Total Interest</div>
+              <div class="rv" id="eInterest">—</div>
+            </div>
+            <div class="rc full">
+              <div class="rl">Total Payment</div>
+              <div class="rv" id="eTotal">—</div>
+              <div class="rs">Principal plus interest</div>
+            </div>
+          </div>
+        </div>
+        <div class="cc">
+          <div class="ct">Outstanding Balance Over Time</div>
+          <div class="cs">Estimated loan balance at each year end</div>
+          <div class="cw"><canvas id="emiGC"></canvas></div>
+        </div>
+        <div class="cc">
+          <div class="ct">Payment Breakdown</div>
+          <div class="cs">Principal vs. total interest</div>
+          <div class="cw-sm"><canvas id="emiDC"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FD -->
+    <div id="calc-fd" class="cbody hidden">
+      <div class="card">
+        <div class="slbl">Deposit Details</div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Deposit Amount (₹)</span><input class="vi" id="fdAmtI" type="number"
+              value="500000" oninput="fromInp('fdAmt',this.value)"></div><input type="range" id="fdAmt" min="1000"
+            max="50000000" step="1000" value="500000" oninput="fromSlider('fdAmt')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Interest Rate (% p.a.)</span><input class="vi" id="fdRateI" type="number"
+              value="7" oninput="fromInp('fdRate',this.value)"></div><input type="range" id="fdRate" min="0" max="15"
+            step="0.1" value="7" oninput="fromSlider('fdRate')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Tenure (Years)</span><input class="vi" id="fdYrsI" type="number" value="5"
+              oninput="fromInp('fdYrs',this.value)"></div><input type="range" id="fdYrs" min="1" max="25" step="1"
+            value="5" oninput="fromSlider('fdYrs')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Compounding</span><select class="select-control" id="fdFreq"
+              onchange="recalc()">
+              <option value="1">Yearly</option>
+              <option value="2">Half-yearly</option>
+              <option value="4" selected>Quarterly</option>
+              <option value="12">Monthly</option>
+            </select></div>
+        </div>
+      </div>
+      <div class="ccol">
+        <div class="card">
+          <div class="slbl">Results Summary</div>
+          <div class="rg">
+            <div class="rc">
+              <div class="rl">Deposit Amount</div>
+              <div class="rv" id="fPrincipal">—</div>
+            </div>
+            <div class="rc">
+              <div class="rl">Interest Earned</div>
+              <div class="rv" id="fInterest">—</div>
+            </div>
+            <div class="rc green">
+              <div class="rl">Maturity Amount</div>
+              <div class="rv" id="fMaturity">—</div>
+              <div class="rs">Value at the end of tenure</div>
+            </div>
+            <div class="rc">
+              <div class="rl">Effective Annual Yield</div>
+              <div class="rv" id="fEay">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="cc">
+          <div class="ct">FD Growth Over Time</div>
+          <div class="cs">Year-wise maturity value</div>
+          <div class="cw"><canvas id="fdGC"></canvas></div>
+        </div>
+        <div class="cc">
+          <div class="ct">Maturity Breakdown</div>
+          <div class="cs">Deposit vs. interest earned</div>
+          <div class="cw-sm"><canvas id="fdDC"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RD -->
+    <div id="calc-rd" class="cbody hidden">
+      <div class="card">
+        <div class="slbl">Recurring Deposit Details</div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Monthly Deposit (₹)</span><input class="vi" id="rdAmtI" type="number"
+              value="10000" oninput="fromInp('rdAmt',this.value)"></div><input type="range" id="rdAmt" min="500"
+            max="500000" step="500" value="10000" oninput="fromSlider('rdAmt')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Interest Rate (% p.a.)</span><input class="vi" id="rdRateI" type="number"
+              value="7" oninput="fromInp('rdRate',this.value)"></div><input type="range" id="rdRate" min="0" max="15"
+            step="0.1" value="7" oninput="fromSlider('rdRate')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Tenure (Years)</span><input class="vi" id="rdYrsI" type="number" value="5"
+              oninput="fromInp('rdYrs',this.value)"></div><input type="range" id="rdYrs" min="1" max="20" step="1"
+            value="5" oninput="fromSlider('rdYrs')">
+        </div>
+        <div class="note">RD maturity is estimated by compounding each monthly deposit until the end of the tenure.
+        </div>
+      </div>
+      <div class="ccol">
+        <div class="card">
+          <div class="slbl">Results Summary</div>
+          <div class="rg">
+            <div class="rc">
+              <div class="rl">Total Deposited</div>
+              <div class="rv" id="rDeposit">—</div>
+            </div>
+            <div class="rc">
+              <div class="rl">Interest Earned</div>
+              <div class="rv" id="rInterest">—</div>
+            </div>
+            <div class="rc green full">
+              <div class="rl">Maturity Amount</div>
+              <div class="rv" id="rMaturity">—</div>
+              <div class="rs">Total value at maturity</div>
+            </div>
+          </div>
+        </div>
+        <div class="cc">
+          <div class="ct">RD Growth Over Time</div>
+          <div class="cs">Deposits and maturity value by year</div>
+          <div class="cw"><canvas id="rdGC"></canvas></div>
+        </div>
+        <div class="cc">
+          <div class="ct">Maturity Breakdown</div>
+          <div class="cs">Deposited amount vs. interest earned</div>
+          <div class="cw-sm"><canvas id="rdDC"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PPF -->
+    <div id="calc-ppf" class="cbody hidden">
+      <div class="card">
+        <div class="slbl">PPF Details</div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Monthly Deposit (₹)</span><input class="vi" id="ppfAmtI" type="number"
+              value="12500" oninput="fromInp('ppfAmt',this.value)"></div><input type="range" id="ppfAmt" min="500"
+            max="12500" step="500" value="12500" oninput="fromSlider('ppfAmt')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Interest Rate (% p.a.)</span><input class="vi" id="ppfRateI" type="number"
+              value="7" oninput="fromInp('ppfRate',this.value)"></div><input type="range" id="ppfRate" min="1" max="12"
+            step="0.1" value="7" oninput="fromSlider('ppfRate')">
+        </div>
+        <div class="ig">
+          <div class="il"><span class="lbl">Inflation Rate (%)</span><input class="vi" id="ppfInflI" type="number"
+              value="6" oninput="fromInp('ppfInfl',this.value)"></div><input type="range" id="ppfInfl" min="0" max="15"
+            step="0.5" value="6" oninput="fromSlider('ppfInfl')">
+        </div>
+        <div class="note">PPF tenure is fixed at 15 years. Returns are tax-free (EEE). Annual deposit limit is ₹1.5 Lakh.</div>
+      </div>
+      <div class="ccol">
+        <div class="card">
+          <div class="slbl">Results Summary</div>
+          <div class="rg">
+            <div class="rc">
+              <div class="rl">Total Deposited</div>
+              <div class="rv" id="pDeposit">—</div>
+              <div class="rs">Over 15 years</div>
+            </div>
+            <div class="rc">
+              <div class="rl">Interest Earned</div>
+              <div class="rv" id="pInterest">—</div>
+              <div class="rs">Tax-free returns</div>
+            </div>
+            <div class="rc green">
+              <div class="rl">Maturity Amount</div>
+              <div class="rv" id="pMaturity">—</div>
+              <div class="rs">At end of 15 years</div>
+            </div>
+            <div class="rc green full">
+              <div class="rl">Inflation-Adjusted Value</div>
+              <div class="rv" id="pInflAdj">—</div>
+              <div class="rs">Real purchasing power in today's rupees</div>
+            </div>
+          </div>
+        </div>
+        <div class="cc">
+          <div class="ct">PPF Growth Over Time</div>
+          <div class="cs">Balance and deposits year by year</div>
+          <div class="cw"><canvas id="ppfGC"></canvas></div>
+        </div>
+        <div class="cc">
+          <div class="ct">Maturity Breakdown</div>
+          <div class="cs">Deposited amount vs. interest earned</div>
+          <div class="cw-sm"><canvas id="ppfDC"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const g = id => document.getElementById(id);
+    const gv = id => parseFloat(g(id).value) || 0;
+    const gy = id => Math.max(1, Math.floor(gv(id)));
+    let authMode = 'login';
+
+    async function api(path, body) {
+      const token = localStorage.getItem('fcToken');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({ message: 'Server error' }));
+      if (!res.ok) throw new Error(data.message || 'Request failed');
+      return data;
+    }
+    async function apiGet(path) {
+      const token = localStorage.getItem('fcToken');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(path, { headers });
+      const data = await res.json().catch(() => ({ message: 'Server error' }));
+      if (!res.ok) throw new Error(data.message || 'Request failed');
+      return data;
+    }
+    async function apiDelete(path) {
+      const token = localStorage.getItem('fcToken');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(path, { method: 'DELETE', headers });
+      const data = await res.json().catch(() => ({ message: 'Server error' }));
+      if (!res.ok) throw new Error(data.message || 'Request failed');
+      return data;
+    }
+    function setAuthMessage(text, type = '') {
+      const el = g('authMsg');
+      el.textContent = text;
+      el.className = 'auth-msg ' + type;
+    }
+    function toggleNavMenu(event, id) {
+      event.stopPropagation();
+      document.querySelectorAll('.nav-item.open').forEach(item => { if (item.id !== id) item.classList.remove('open') });
+      g(id).classList.toggle('open');
+    }
+    function closeMenus() {
+      document.querySelectorAll('.nav-item.open').forEach(item => item.classList.remove('open'));
+      const accountPop = g('accountPop');
+      if (accountPop) accountPop.classList.remove('open');
+    }
+    function selectCalc(event, id) {
+      event.stopPropagation();
+      showCalc(id);
+      closeMenus();
+    }
+    function toggleAccountMenu(event) {
+      event.stopPropagation();
+      g('accountPop').classList.toggle('open');
+    }
+    function setAuthMode(mode) {
+      authMode = mode;
+      g('loginTab').classList.toggle('active', mode === 'login');
+      g('signupTab').classList.toggle('active', mode === 'signup');
+      g('confirmField').classList.toggle('hidden', mode !== 'signup');
+      g('authTitle').textContent = mode === 'login' ? 'Login to FinCalc' : 'Create your FinCalc account';
+      g('authSub').textContent = 'Use a username with no spaces and your password.';
+      g('authPass').setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
+      setAuthMessage('');
+    }
+    function openAuth() { g('authModal').classList.remove('hidden'); setAuthMode(authMode); }
+    function closeAuth() { g('authModal').classList.add('hidden'); }
+    async function submitAuth() {
+      const username = g('authUsername').value.trim().toLowerCase();
+      const password = g('authPass').value;
+      const confirm = g('authConfirm').value;
+      try {
+        if (!/^[a-z0-9_]{3,24}$/.test(username)) throw new Error('Username must be 3-24 characters with no spaces. Use letters, numbers, or underscore.');
+        if (password.length < 8) throw new Error('Password must be at least 8 characters.');
+        if (authMode === 'signup' && password !== confirm) throw new Error('Passwords do not match.');
+        g('authMainBtn').disabled = true;
+        const data = await api(`/api/auth/${authMode === 'signup' ? 'signup' : 'login'}`, { username, password });
+        localStorage.setItem('fcUsername', data.user.username);
+        localStorage.setItem('fcToken', data.token);
+        applyAuthState();
+        closeAuth();
+      } catch (err) {
+        setAuthMessage(err.message, 'err');
+      } finally {
+        g('authMainBtn').disabled = false;
+      }
+    }
+    async function logout() {
+      try { await api('/api/auth/logout', {}); } catch (err) { }
+      localStorage.removeItem('fcUsername');
+      localStorage.removeItem('fcToken');
+      applyAuthState();
+    }
+    function applyAuthState() {
+      const username = localStorage.getItem('fcUsername');
+      g('loginBtn').style.display = username ? 'none' : 'flex';
+      g('accountBtn').classList.toggle('hidden', !username);
+      g('accountPop').classList.remove('open');
+      g('historyActions').style.display = username ? 'flex' : 'none';
+      g('userName').textContent = username || '';
+    }
+    async function hydrateSession() {
+      if (!localStorage.getItem('fcToken')) return applyAuthState();
+      try {
+        const data = await apiGet('/api/auth/me');
+        localStorage.setItem('fcUsername', data.user.username);
+      } catch (err) {
+        localStorage.removeItem('fcUsername');
+        localStorage.removeItem('fcToken');
+      }
+      applyAuthState();
+    }
+    function postTaxValue(corpus, invested, tax) {
+      const gains = Math.max(0, corpus - invested);
+      const taxable = Math.max(0, gains - 125000);
+      return corpus - (taxable * tax);
+    }
+    function realValue(amount, inflation, years) {
+      return amount / Math.pow(1 + inflation, years);
+    }
+    function periodicRate(annualRate, periodsPerYear = 12) {
+      return Math.pow(1 + annualRate, 1 / periodsPerYear) - 1;
+    }
+    function getCurrentCalculation() {
+      const base = { calcType: activeCalc, title: g('pgTitle').textContent, createdAt: new Date().toISOString() };
+      if (activeCalc === 'sip') {
+        return {
+          ...base, inputs: {
+            monthlyInvestment: gv('sipAmt'), expectedReturn: gv('sipRet'), years: gy('sipYrs'), inflation: gv('sipInfl'), tax: gv('sipTax'), mode: sipMode, stepUpType: suType, initialLumpsum: gv('sipInit'), expenseRatio: gv('sipExp')
+          }, summary: {
+            invested: g('sInv').textContent, nominal: g('sTot').textContent, afterTaxValue: g('sPostTax').textContent, highlight: g('sInflAdj').textContent, investedInflAdj: g('sInvInflAdj').textContent
+          }
+        };
+      }
+      if (activeCalc === 'swp') {
+        return {
+          ...base, inputs: {
+            initialCorpus: gv('swpCor'), monthlyWithdrawal: gv('swpWd'), expectedReturn: gv('swpRet'), years: gy('swpYrs'), inflation: gv('swpInfl'), tax: gv('swpTax')
+          }, summary: {
+            withdrawn: g('wwTot').textContent, remaining: g('wwRem').textContent, lasts: g('wwLasts').textContent, postTaxMonthly: g('wwPostTax').textContent, highlight: g('wwInflAdj').textContent
+          }
+        };
+      }
+      if (activeCalc === 'emi') {
+        return {
+          ...base, inputs: {
+            loanAmount: gv('emiAmt'), interestRate: gv('emiRate'), years: gy('emiYrs')
+          }, summary: {
+            monthlyEmi: g('eEmi').textContent, totalInterest: g('eInterest').textContent, totalPayment: g('eTotal').textContent
+          }
+        };
+      }
+      if (activeCalc === 'fd') {
+        return {
+          ...base, inputs: {
+            depositAmount: gv('fdAmt'), interestRate: gv('fdRate'), years: gy('fdYrs'), compounding: g('fdFreq').value
+          }, summary: {
+            maturity: g('fMaturity').textContent, interest: g('fInterest').textContent, effectiveYield: g('fEay').textContent
+          }
+        };
+      }
+      if (activeCalc === 'rd') {
+        return {
+          ...base, inputs: {
+            monthlyDeposit: gv('rdAmt'), interestRate: gv('rdRate'), years: gy('rdYrs')
+          }, summary: {
+            deposited: g('rDeposit').textContent, interest: g('rInterest').textContent, maturity: g('rMaturity').textContent
+          }
+        };
+      }
+      if (activeCalc === 'ppf') {
+        return {
+          ...base, inputs: {
+            monthlyDeposit: gv('ppfAmt'), interestRate: gv('ppfRate'), inflation: gv('ppfInfl')
+          }, summary: {
+            deposited: g('pDeposit').textContent, interest: g('pInterest').textContent, maturity: g('pMaturity').textContent, highlight: g('pInflAdj').textContent
+          }
+        };
+      }
+      return {
+        ...base, inputs: {
+          investmentAmount: gv('lsAmt'), expectedReturn: gv('lsRet'), years: gy('lsYrs'), inflation: gv('lsInfl'), tax: gv('lsTax')
+        }, summary: {
+          invested: g('llInv').textContent, nominal: g('llTot').textContent, afterTaxValue: g('llPostTax').textContent, highlight: g('llInflAdj').textContent
+        }
+      };
+    }
+    async function saveCalculation() {
+      if (!localStorage.getItem('fcToken')) return openAuth();
+      try {
+        await api('/api/history', getCurrentCalculation());
+        await openHistory('Saved to history.');
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+    function closeHistory() { g('historyModal').classList.add('hidden'); }
+    async function openHistory(message = '') {
+      if (!localStorage.getItem('fcToken')) return openAuth();
+      g('historyModal').classList.remove('hidden');
+      g('historyMsg').textContent = message;
+      try {
+        const data = await apiGet('/api/history');
+        renderHistory(data.history || []);
+      } catch (err) {
+        g('historyList').innerHTML = '<div class="history-empty">Could not load history. Please login again.</div>';
+        g('historyMsg').textContent = err.message;
+      }
+    }
+    function renderHistory(items) {
+      if (!items.length) {
+        g('historyList').innerHTML = '<div class="history-empty">No saved calculations yet. Save a result to build your personal history.</div>';
+        return;
+      }
+      g('historyList').innerHTML = items.map(item => {
+        const stats = Object.entries(item.summary || {}).slice(0, 4).map(([key, value]) => `
+      <div class="history-stat"><span>${key.replace(/([A-Z])/g, ' $1')}</span><strong>${value}</strong></div>
+    `).join('');
+        return `
+      <div class="history-item">
+        <div class="history-top">
+          <div>
+            <div class="history-title">${escapeHtml(item.title || item.calcType)}</div>
+            <div class="history-date">${new Date(item.createdAt).toLocaleString('en-IN')}</div>
+          </div>
+          <button class="icon-btn" onclick="deleteHistoryItem('${item.id}')" aria-label="Delete history item"><span class="material-symbols-rounded">delete</span></button>
+        </div>
+        <div class="history-grid">${stats}</div>
+      </div>
+    `;
+      }).join('');
+    }
+    // ----- Local storage history (no login required) -----
+    function saveLocal() {
+      try {
+        const cur = getCurrentCalculation();
+        const list = JSON.parse(localStorage.getItem('fcLocalHistory') || '[]');
+        const id = Date.now().toString(36) + '-' + Math.floor(Math.random() * 9000 + 1000);
+        const entry = { id, title: cur.title || cur.calcType, calcType: cur.calcType, inputs: cur.inputs, summary: cur.summary || {}, createdAt: new Date().toISOString() };
+        list.unshift(entry);
+        localStorage.setItem('fcLocalHistory', JSON.stringify(list));
+        alert('Saved locally. Open Local History to use or rewind.');
+      } catch (err) { alert('Could not save locally: ' + err.message) }
+    }
+    function openLocalHistory() {
+      const list = JSON.parse(localStorage.getItem('fcLocalHistory') || '[]');
+      g('historyModal').classList.remove('hidden');
+      g('historyMsg').textContent = 'Local saved calculations';
+      renderLocalHistory(list);
+    }
+    function renderLocalHistory(items) {
+      if (!items.length) {
+        g('historyList').innerHTML = '<div class="history-empty">No local saved calculations. Use Save Locally to add.</div>';
+        return;
+      }
+      g('historyList').innerHTML = items.map(item => {
+        const stats = Object.entries(item.summary || {}).slice(0, 4).map(([key, value]) => `
+      <div class="history-stat"><span>${key.replace(/([A-Z])/g, ' $1')}</span><strong>${value}</strong></div>
+    `).join('');
+        return `
+      <div class="history-item">
+        <div class="history-top">
+          <div>
+            <div class="history-title">${escapeHtml(item.title || item.calcType)}</div>
+            <div class="history-date">${new Date(item.createdAt).toLocaleString('en-IN')}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="mini-btn" onclick="useLocalItem('${item.id}')">Use</button>
+            <button class="icon-btn" onclick="deleteLocalItem('${item.id}')" aria-label="Delete local item"><span class="material-symbols-rounded">delete</span></button>
+          </div>
+        </div>
+        <div class="history-grid">${stats}</div>
+      </div>
+    `;
+      }).join('');
+    }
+    function deleteLocalItem(id) {
+      try {
+        const list = JSON.parse(localStorage.getItem('fcLocalHistory') || '[]').filter(i => i.id !== id);
+        localStorage.setItem('fcLocalHistory', JSON.stringify(list));
+        renderLocalHistory(list);
+        g('historyMsg').textContent = 'Deleted local item.';
+      } catch (err) { g('historyMsg').textContent = err.message }
+    }
+    function useLocalItem(id) {
+      const list = JSON.parse(localStorage.getItem('fcLocalHistory') || '[]');
+      const item = list.find(i => i.id === id);
+      if (!item) return alert('Item not found');
+      applySavedCalculation(item);
+      g('historyModal').classList.add('hidden');
+    }
+    function applySavedCalculation(item) {
+      if (!item || !item.inputs) return;
+      const type = item.calcType || item.title || activeCalc;
+      showCalc(type);
+      const inp = item.inputs || {};
+      const setVal = (id, val) => { if (g(id)) { g(id).value = val; const txt = g(id + 'I'); if (txt) txt.value = val; try { fillSlider(g(id)) } catch (e) { } } };
+      if (type === 'sip') {
+        setVal('sipAmt', inp.monthlyInvestment || inp.monthly || gv('sipAmt'));
+        setVal('sipRet', inp.expectedReturn || gv('sipRet'));
+        setVal('sipYrs', inp.years || inp.years || gv('sipYrs'));
+        setVal('sipInfl', inp.inflation || gv('sipInfl'));
+        setVal('sipTax', inp.tax || gv('sipTax'));
+        setVal('sipInit', inp.initialLumpsum || gv('sipInit'));
+        setVal('sipExp', inp.expenseRatio || gv('sipExp'));
+        if (inp.mode) setSipMode(inp.mode);
+        if (inp.stepUpType) setSuType(inp.stepUpType);
+        if (inp.stepUpType === 'pct' && inp.suPct) setVal('suPct', inp.suPct);
+        if (inp.stepUpType === 'fixed' && inp.suFix) setVal('suFix', inp.suFix);
+      } else if (type === 'swp') {
+        setVal('swpCor', inp.initialCorpus || gv('swpCor'));
+        setVal('swpWd', inp.monthlyWithdrawal || gv('swpWd'));
+        setVal('swpRet', inp.expectedReturn || gv('swpRet'));
+        setVal('swpYrs', inp.years || gv('swpYrs'));
+        setVal('swpInfl', inp.inflation || gv('swpInfl'));
+        setVal('swpTax', inp.tax || gv('swpTax'));
+      } else if (type === 'lumpsum') {
+        setVal('lsAmt', inp.investmentAmount || gv('lsAmt'));
+        setVal('lsRet', inp.expectedReturn || gv('lsRet'));
+        setVal('lsYrs', inp.years || gv('lsYrs'));
+        setVal('lsInfl', inp.inflation || gv('lsInfl'));
+        setVal('lsTax', inp.tax || gv('lsTax'));
+      } else if (type === 'emi') {
+        setVal('emiAmt', inp.loanAmount || gv('emiAmt'));
+        setVal('emiRate', inp.interestRate || gv('emiRate'));
+        setVal('emiYrs', inp.years || gv('emiYrs'));
+      } else if (type === 'fd') {
+        setVal('fdAmt', inp.depositAmount || gv('fdAmt'));
+        setVal('fdRate', inp.interestRate || gv('fdRate'));
+        setVal('fdYrs', inp.years || gv('fdYrs'));
+        if (inp.compounding) { g('fdFreq').value = inp.compounding; }
+      } else if (type === 'rd') {
+        setVal('rdAmt', inp.monthlyDeposit || gv('rdAmt'));
+        setVal('rdRate', inp.interestRate || gv('rdRate'));
+        setVal('rdYrs', inp.years || gv('rdYrs'));
+      } else if (type === 'ppf') {
+        setVal('ppfAmt', inp.monthlyDeposit || gv('ppfAmt'));
+        setVal('ppfRate', inp.interestRate || gv('ppfRate'));
+        setVal('ppfInfl', inp.inflation || gv('ppfInfl'));
+      }
+      recalc();
+    }
+    async function deleteHistoryItem(id) {
+      try {
+        const data = await apiDelete(`/api/history/${id}`);
+        renderHistory(data.history || []);
+        g('historyMsg').textContent = 'Deleted.';
+      } catch (err) {
+        g('historyMsg').textContent = err.message;
+      }
+    }
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch]));
+    }
+
+    // Format currency
+    const fmt = n => {
+      if (n >= 1e7) return '₹' + (n / 1e7).toFixed(2) + ' Cr';
+      if (n >= 1e5) return '₹' + (n / 1e5).toFixed(2) + ' L';
+      return '₹' + Math.round(n).toLocaleString('en-IN');
+    };
+    const fmtS = n => {
+      if (n >= 1e7) return (n / 1e7).toFixed(1) + 'Cr';
+      if (n >= 1e5) return (n / 1e5).toFixed(1) + 'L';
+      return (n / 1000).toFixed(0) + 'K';
+    };
+
+    let sipMode = 'simple', suType = 'pct', activeCalc = 'sip';
+
+    function fromSlider(id) {
+      const el = g(id), v = el.value;
+      g(id + 'I').value = v;
+      fillSlider(el);
+      recalc();
+    }
+    function fromInp(id, v) {
+      const rangeEl = g(id);
+      const numEl = g(id + 'I');
+      if (v === '' || v === null || typeof v === 'undefined') {
+        if (numEl) numEl.value = '';
+        recalc();
+        return;
+      }
+      const parsed = parseFloat(v);
+      const minV = parseFloat(rangeEl.min);
+      const maxV = parseFloat(rangeEl.max);
+      const safe = Number.isFinite(parsed) ? parsed : minV;
+      const clamped = Math.min(maxV, Math.max(minV, safe));
+      if (rangeEl) rangeEl.value = clamped;
+      if (numEl) numEl.value = clamped;
+      try { fillSlider(rangeEl); } catch (e) { }
+      recalc();
+    }
+    function fillSlider(el) {
+      const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+      el.style.setProperty('--range-fill', pct + '%');
+    }
+    function fillAll() { document.querySelectorAll('input[type=range]').forEach(fillSlider) }
+
+    // ── Chart helpers ──
+    const lineOpts = () => ({
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 11.5 }, usePointStyle: true, pointStyleWidth: 8, padding: 14, color: '#6B7A99' } },
+        tooltip: { backgroundColor: 'rgba(10,15,30,.93)', titleFont: { family: 'Inter', size: 12 }, bodyFont: { family: 'Inter', size: 12 }, padding: 12, cornerRadius: 9, callbacks: { label: c => ` ${c.dataset.label}: ${fmtS(c.raw)}` } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10.5 }, color: '#9BA8BF', maxTicksLimit: 10 }, border: { display: false } },
+        y: { grid: { color: '#F1F4FA', lineWidth: 1 }, ticks: { font: { family: 'Inter', size: 10.5 }, color: '#9BA8BF', callback: v => fmtS(v) }, border: { display: false } }
+      }
+    });
+    const donutOpts = () => ({
+      responsive: true, maintainAspectRatio: false, cutout: '72%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 11.5 }, usePointStyle: true, pointStyleWidth: 8, padding: 14, color: '#6B7A99' } },
+        tooltip: { backgroundColor: 'rgba(10,15,30,.93)', titleFont: { family: 'Inter', size: 12 }, bodyFont: { family: 'Inter', size: 12 }, padding: 12, cornerRadius: 9, callbacks: { label: c => ` ${c.label}: ${fmtS(c.raw)}` } }
+      }
+    });
+    function mkChart(id, type, data, opts) {
+      const el = g(id); if (!el) return null;
+      const ex = Chart.getChart(el); if (ex) ex.destroy();
+      return new Chart(el, { type, data, options: opts });
+    }
+
+    // ── RECALC ROUTER ──
+    function recalc() {
+      fillAll();
+      if (activeCalc === 'sip') calcSip();
+      else if (activeCalc === 'swp') calcSwp();
+      else if (activeCalc === 'lumpsum') calcLs();
+      else if (activeCalc === 'emi') calcEmi();
+      else if (activeCalc === 'fd') calcFd();
+      else if (activeCalc === 'rd') calcRd();
+      else if (activeCalc === 'ppf') calcPpf();
+      else calcLs();
+    }
+
+    // ── SIP ──
+    function calcSip() {
+      const P = Number(gv('sipAmt')) || 0, rAnn = Number(gv('sipRet')) / 100 || 0, yrs = gy('sipYrs');
+      const inf = Number(gv('sipInfl')) / 100 || 0, tax = Number(gv('sipTax')) / 100 || 0;
+      const initial = Number(gv('sipInit')) || 0, expense = Number(gv('sipExp')) / 100 || 0;
+
+      let corpus = initial, invested = initial, monthly = P;
+      let investedInflAdj = initial;
+      const data = [];
+
+      for (let yr = 1; yr <= yrs; yr++) {
+        const monthlyThisYear = monthly;
+        for (let mo = 1; mo <= 12; mo++) {
+          corpus += monthlyThisYear;
+          invested += monthlyThisYear;
+        }
+        corpus *= 1 + rAnn;
+        if (expense > 0) corpus *= 1 - expense;
+        investedInflAdj += (monthlyThisYear * 12) / Math.pow(1 + Math.max(0, inf), yr - 0.5);
+        data.push({ yr, corpus, invested });
+        if (sipMode === 'stepup') {
+          if (suType === 'pct') monthly *= (1 + gv('suPct') / 100);
+          else if (suType === 'fixed') monthly += gv('suFix');
+          else if (suType === 'infl') monthly *= (1 + inf);
+        }
+      }
+
+      const gains = corpus - invested;
+      const taxable = Math.max(0, gains - 125000);
+      const taxAmt = taxable * tax;
+      const postTax = corpus - taxAmt;
+      const inflAdj = realValue(postTax, inf, yrs);
+
+      // FIX 2: Compare real purchasing power of corpus (inflAdj) against the real cost
+      // of investment (investedInflAdj). Both are in today's rupees, so the difference
+      // is a true measure of real wealth created. The old code compared inflAdj against
+      // nominal invested (not inflation-adjusted), which understated real profit.
+      const profitLoss = Math.round(inflAdj - investedInflAdj);
+      const isProfit = profitLoss >= 0;
+
+      g('sInv').textContent = fmt(invested);
+      g('sInvInflAdj').textContent = fmt(investedInflAdj);
+      g('sRet').textContent = fmt(gains);
+      g('sTot').textContent = fmt(corpus);
+      g('sInflAdj').textContent = fmt(inflAdj);
+      g('sPostTax').textContent = fmt(postTax);
+      g('sTax').textContent = fmt(taxAmt);
+      g('sProfitLoss').textContent = fmt(Math.abs(profitLoss));
+      g('sProfitLabel').textContent = isProfit ? 'Profit' : 'Loss';
+      g('sProfitNote').textContent = isProfit
+        ? 'Post-tax inflation-adjusted corpus (today\'s ₹) exceeds the inflation-adjusted cost of your contributions.'
+        : 'Post-tax inflation-adjusted corpus (today\'s ₹) is below the inflation-adjusted cost of your contributions.';
+      g('sSummaryHead').className = 'summary-head ' + (isProfit ? 'profit' : 'loss');
+
+      const lbl = data.map(d => `Yr ${d.yr}`);
+      mkChart('sipGC', 'line', {
+        labels: lbl, datasets: [
+          { label: 'Total Value', data: data.map(d => Math.round(d.corpus)), borderColor: '#16A34A', backgroundColor: 'rgba(22,163,74,.07)', tension: .4, fill: true, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 5 },
+          { label: 'Inflation-Adjusted (pre-tax)', data: data.map(d => Math.round(realValue(d.corpus, inf, d.yr))), borderColor: '#6366F1', backgroundColor: 'rgba(99,102,241,.05)', tension: .4, fill: true, borderWidth: 2, borderDash: [6, 4], pointRadius: 4, pointHoverRadius: 5 },
+          { label: 'Invested', data: data.map(d => Math.round(d.invested)), borderColor: '#CBD5E1', backgroundColor: 'transparent', tension: .4, borderWidth: 1.5, borderDash: [3, 3], pointRadius: 4, pointHoverRadius: 4 }
+        ]
+      }, lineOpts());
+      mkChart('sipDC', 'doughnut', {
+        labels: ['Invested', 'Returns', 'Tax'],
+        datasets: [{ data: [Math.round(invested), Math.round(gains - taxAmt), Math.round(taxAmt)], backgroundColor: ['#0A0F1E', '#22C55E', '#F59E0B'], borderWidth: 0, hoverOffset: 7 }]
+      }, donutOpts());
+    }
+
+    // ── SWP ──
+    function calcSwp() {
+      const C0 = gv('swpCor'), W = gv('swpWd'), rAnn = gv('swpRet') / 100;
+      const yrs = gy('swpYrs'), inf = gv('swpInfl') / 100, tax = gv('swpTax') / 100;
+      const r = periodicRate(rAnn, 12);
+      let corpus = C0, totalWd = 0, months = 0;
+      const yrData = [];
+      let done = false;
+      for (let yr = 1; yr <= yrs && !done; yr++) {
+        for (let mo = 1; mo <= 12; mo++) {
+          const available = corpus * (1 + r);
+          const withdrawal = Math.min(W, available);
+          corpus = available - withdrawal;
+          totalWd += withdrawal;
+          months++;
+          if (corpus <= 0) { corpus = 0; done = true; break; }
+        }
+        yrData.push({ yr, corpus: Math.max(0, corpus) });
+      }
+      const lastYr = yrData.length ? yrData[yrData.length - 1].yr : yrs;
+      for (let yr = lastYr + 1; yr <= yrs; yr++) yrData.push({ yr, corpus: 0 });
+
+      const lastsYearsRaw = months / 12;
+      const lastsYrs = lastsYearsRaw.toFixed(1);
+      const postTaxMo = W * (1 - tax);
+      const inflationYears = corpus > 0 ? yrs : lastsYearsRaw;
+      const inflAdjMo = realValue(postTaxMo, inf, inflationYears);
+
+      g('wwTot').textContent = fmt(totalWd);
+      g('wwRem').textContent = fmt(Math.max(0, corpus));
+      g('wwLasts').textContent = corpus > 0 ? `${yrs}+ Yrs` : `${lastsYrs} Yrs`;
+      g('wwPostTax').textContent = fmt(postTaxMo) + '/mo';
+      g('wwInflAdj').textContent = fmt(inflAdjMo) + '/mo';
+
+      mkChart('swpGC', 'line', {
+        labels: yrData.map(d => `Yr ${d.yr}`), datasets: [
+          { label: 'Remaining Corpus', data: yrData.map(d => Math.round(d.corpus)), borderColor: '#6366F1', backgroundColor: 'rgba(99,102,241,.08)', tension: .4, fill: true, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 5 }
+        ]
+      }, lineOpts());
+    }
+
+    // ── LUMPSUM ──
+    function calcLs() {
+      const P = gv('lsAmt'), rAnn = gv('lsRet') / 100, yrs = gy('lsYrs');
+      const inf = gv('lsInfl') / 100, tax = gv('lsTax') / 100;
+      const data = Array.from({ length: yrs }, (_, i) => ({ yr: i + 1, corpus: P * Math.pow(1 + rAnn, i + 1) }));
+      const corpus = data[yrs - 1].corpus;
+      const gains = corpus - P;
+      const taxable = Math.max(0, gains - 125000);
+      const taxAmt = taxable * tax;
+      const postTax = corpus - taxAmt;
+      const inflAdj = realValue(postTax, inf, yrs);
+
+      g('llInv').textContent = fmt(P);
+      g('llRet').textContent = fmt(gains);
+      g('llTot').textContent = fmt(corpus);
+      g('llInflAdj').textContent = fmt(inflAdj);
+      g('llPostTax').textContent = fmt(postTax);
+
+      mkChart('lsGC', 'line', {
+        labels: data.map(d => `Yr ${d.yr}`), datasets: [
+          { label: 'Total Value', data: data.map(d => Math.round(d.corpus)), borderColor: '#16A34A', backgroundColor: 'rgba(22,163,74,.07)', tension: .4, fill: true, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 5 },
+          { label: 'Post-Tax Inflation Adj.', data: data.map(d => Math.round(realValue(postTaxValue(d.corpus, P, tax), inf, d.yr))), borderColor: '#6366F1', backgroundColor: 'rgba(99,102,241,.05)', tension: .4, fill: true, borderWidth: 2, borderDash: [6, 4], pointRadius: 4, pointHoverRadius: 5 },
+          { label: 'Principal', data: data.map(() => Math.round(P)), borderColor: '#CBD5E1', backgroundColor: 'transparent', tension: 0, borderWidth: 1.5, borderDash: [3, 3], pointRadius: 4 }
+        ]
+      }, lineOpts());
+      mkChart('lsDC', 'doughnut', {
+        labels: ['Principal', 'Returns', 'Tax'],
+        datasets: [{ data: [Math.round(P), Math.round(gains - taxAmt), Math.round(taxAmt)], backgroundColor: ['#0A0F1E', '#22C55E', '#F59E0B'], borderWidth: 0, hoverOffset: 7 }]
+      }, donutOpts());
+    }
+
+    // ── EMI ──
+    function calcEmi() {
+      const P = gv('emiAmt'), rAnn = gv('emiRate') / 100, yrs = gy('emiYrs');
+      const months = yrs * 12, r = periodicRate(rAnn, 12);
+      const emi = r === 0 ? P / months : (P * r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
+      const total = emi * months;
+      const interest = Math.max(0, total - P);
+      let balance = P;
+      const data = [];
+      for (let yr = 1; yr <= yrs; yr++) {
+        for (let mo = 1; mo <= 12; mo++) {
+          const monthInterest = balance * r;
+          const principalPaid = Math.min(balance, emi - monthInterest);
+          balance = Math.max(0, balance - principalPaid);
+        }
+        data.push({ yr, balance });
+      }
+      g('eEmi').textContent = fmt(emi) + '/mo';
+      g('eInterest').textContent = fmt(interest);
+      g('eTotal').textContent = fmt(total);
+      mkChart('emiGC', 'line', {
+        labels: data.map(d => `Yr ${d.yr}`), datasets: [
+          { label: 'Outstanding Balance', data: data.map(d => Math.round(d.balance)), borderColor: '#6366F1', backgroundColor: 'rgba(99,102,241,.08)', tension: .4, fill: true, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 5 }
+        ]
+      }, lineOpts());
+      mkChart('emiDC', 'doughnut', {
+        labels: ['Principal', 'Interest'],
+        datasets: [{ data: [Math.round(P), Math.round(interest)], backgroundColor: ['#0A0F1E', '#F59E0B'], borderWidth: 0, hoverOffset: 7 }]
+      }, donutOpts());
+    }
+
+    // ── FD ──
+    function calcFd() {
+      const P = gv('fdAmt'), rAnn = gv('fdRate') / 100, yrs = gy('fdYrs'), freq = parseInt(g('fdFreq').value, 10) || 1;
+      const maturity = P * Math.pow(1 + rAnn / freq, freq * yrs);
+      const interest = Math.max(0, maturity - P);
+      const eay = (Math.pow(1 + rAnn / freq, freq) - 1) * 100;
+      const data = Array.from({ length: yrs }, (_, i) => ({ yr: i + 1, value: P * Math.pow(1 + rAnn / freq, freq * (i + 1)) }));
+      g('fPrincipal').textContent = fmt(P);
+      g('fInterest').textContent = fmt(interest);
+      g('fMaturity').textContent = fmt(maturity);
+      g('fEay').textContent = eay.toFixed(2) + '%';
+      mkChart('fdGC', 'line', {
+        labels: data.map(d => `Yr ${d.yr}`), datasets: [
+          { label: 'Maturity Value', data: data.map(d => Math.round(d.value)), borderColor: '#16A34A', backgroundColor: 'rgba(22,163,74,.07)', tension: .4, fill: true, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 5 },
+          { label: 'Deposit', data: data.map(() => Math.round(P)), borderColor: '#CBD5E1', backgroundColor: 'transparent', tension: 0, borderWidth: 1.5, borderDash: [3, 3], pointRadius: 4 }
+        ]
+      }, lineOpts());
+      mkChart('fdDC', 'doughnut', {
+        labels: ['Deposit', 'Interest'],
+        datasets: [{ data: [Math.round(P), Math.round(interest)], backgroundColor: ['#0A0F1E', '#22C55E'], borderWidth: 0, hoverOffset: 7 }]
+      }, donutOpts());
+    }
+
+    // ── RD ──
+    function calcRd() {
+      const P = gv('rdAmt'), rAnn = gv('rdRate') / 100, yrs = gy('rdYrs');
+      const months = yrs * 12, r = periodicRate(rAnn, 12);
+      let corpus = 0, deposited = 0;
+      const data = [];
+      for (let mo = 1; mo <= months; mo++) {
+        corpus = (corpus + P) * (1 + r);
+        deposited += P;
+        if (mo % 12 === 0) data.push({ yr: mo / 12, corpus, deposit: deposited });
+      }
+      const interest = Math.max(0, corpus - deposited);
+      g('rDeposit').textContent = fmt(deposited);
+      g('rInterest').textContent = fmt(interest);
+      g('rMaturity').textContent = fmt(corpus);
+      mkChart('rdGC', 'line', {
+        labels: data.map(d => `Yr ${d.yr}`), datasets: [
+          { label: 'Maturity Value', data: data.map(d => Math.round(d.corpus)), borderColor: '#16A34A', backgroundColor: 'rgba(22,163,74,.07)', tension: .4, fill: true, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 5 },
+          { label: 'Deposited', data: data.map(d => Math.round(d.deposit)), borderColor: '#CBD5E1', backgroundColor: 'transparent', tension: .4, borderWidth: 1.5, borderDash: [3, 3], pointRadius: 4 }
+        ]
+      }, lineOpts());
+      mkChart('rdDC', 'doughnut', {
+        labels: ['Deposited', 'Interest'],
+        datasets: [{ data: [Math.round(deposited), Math.round(interest)], backgroundColor: ['#0A0F1E', '#22C55E'], borderWidth: 0, hoverOffset: 7 }]
+      }, donutOpts());
+    }
+
+    // ── PPF ──
+    const PPF_YEARS = 15;
+    function calcPpf() {
+      const P = gv('ppfAmt'), rAnn = gv('ppfRate') / 100, inf = gv('ppfInfl') / 100;
+      const months = PPF_YEARS * 12, r = periodicRate(rAnn, 12);
+      let corpus = 0, deposited = 0;
+      const data = [];
+      for (let mo = 1; mo <= months; mo++) {
+        corpus = (corpus + P) * (1 + r);
+        deposited += P;
+        if (mo % 12 === 0) data.push({ yr: mo / 12, corpus, deposit: deposited });
+      }
+      const interest = Math.max(0, corpus - deposited);
+      const inflAdj = realValue(corpus, inf, PPF_YEARS);
+      g('pDeposit').textContent = fmt(deposited);
+      g('pInterest').textContent = fmt(interest);
+      g('pMaturity').textContent = fmt(corpus);
+      g('pInflAdj').textContent = fmt(inflAdj);
+      mkChart('ppfGC', 'line', {
+        labels: data.map(d => `Yr ${d.yr}`), datasets: [
+          { label: 'PPF Balance', data: data.map(d => Math.round(d.corpus)), borderColor: '#0D9488', backgroundColor: 'rgba(13,148,136,.08)', tension: .4, fill: true, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 5 },
+          { label: 'Total Deposited', data: data.map(d => Math.round(d.deposit)), borderColor: '#CBD5E1', backgroundColor: 'transparent', tension: .4, borderWidth: 1.5, borderDash: [3, 3], pointRadius: 4 }
+        ]
+      }, lineOpts());
+      mkChart('ppfDC', 'doughnut', {
+        labels: ['Deposited', 'Interest'],
+        datasets: [{ data: [Math.round(deposited), Math.round(interest)], backgroundColor: ['#0A0F1E', '#0D9488'], borderWidth: 0, hoverOffset: 7 }]
+      }, donutOpts());
+    }
+
+    function showCalc(id) {
+      activeCalc = id;
+      ['sip', 'swp', 'lumpsum', 'emi', 'fd', 'rd', 'ppf'].forEach(c => {
+        g('calc-' + c).classList.toggle('hidden', c !== id);
+      });
+      const t = {
+        sip: ['SIP Calculator', 'SIP returns after tax and inflation with step-up options and real-time mutual fund graphs'],
+        swp: ['SWP Calculator', 'Plan systematic withdrawals with post-tax, inflation-adjusted monthly income and corpus analysis'],
+        lumpsum: ['Lumpsum Calculator', 'One-time investment returns with post-tax, inflation-adjusted value and charts'],
+        emi: ['Loan Calculator', 'Plan loan repayments with monthly EMI, total interest and outstanding balance charts'],
+        fd: ['FD Calculator', 'Estimate fixed deposit maturity with compounding frequency and effective annual yield'],
+        rd: ['RD Calculator', 'Plan recurring monthly deposits with year-wise growth and maturity breakdown'],
+        ppf: ['PPF Calculator', 'Estimate 15-year Public Provident Fund maturity with tax-free returns and inflation-adjusted value']
+      };
+      g('pgTitle').textContent = t[id][0]; g('pgSub').textContent = t[id][1];
+      recalc();
+    }
+    function setSipMode(m) {
+      sipMode = m;
+      g('sipModeSimple').classList.toggle('active', m === 'simple');
+      g('sipModeStepup').classList.toggle('active', m === 'stepup');
+      g('suSection').classList.toggle('hidden', m === 'simple');
+      updateSuRows(); recalc();
+    }
+    function setSuType(t) {
+      suType = t;
+      ['Pct', 'Fixed', 'Infl'].forEach(x => g('suBtn' + x).classList.toggle('active', x.toLowerCase() === t));
+      updateSuRows(); recalc();
+    }
+    function updateSuRows() {
+      g('rowPct').classList.toggle('hidden', sipMode !== 'stepup' || suType !== 'pct');
+      g('rowFixed').classList.toggle('hidden', sipMode !== 'stepup' || suType !== 'fixed');
+    }
+
+    // ── INIT ──
+    document.addEventListener('click', closeMenus);
+    hydrateSession(); fillAll(); recalc();
+  </script>
+</body>
+
+</html>

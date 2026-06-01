@@ -1,0 +1,14 @@
+export { calculate as calculateRetirement } from './retirement';
+export { calculate as calculateGoalSip } from './goalSip';
+export { calculate as calculateInflation } from './inflation';
+export { calculate as calculateCagr } from './cagr';
+export { calculate as calculateLoanPrepayment } from './loanPrepayment';
+export { calculate as calculateLoanEligibility } from './loanEligibility';
+export { calculate as calculateIncomeTax } from './incomeTax';
+export { calculate as calculateFd } from './fd';
+export { calculate as calculateRd } from './rd';
+export { calculate as calculateLumpsum } from './lumpsum';
+export { calculate as calculatePpf } from './ppf';
+export { calculate as calculateLoan } from './loan';
+export { calculate as calculateSwp } from './swp';
+export { calculate as calculateSip } from './sip';
