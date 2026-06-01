@@ -3,6 +3,19 @@ import SavedConfigsPanel from '../SavedConfigsPanel';
 import ChartPanel from './ChartPanel';
 import { useCalculatorPage } from '../../hooks/useCalculatorPage';
 
+function getRangeFillStyle(field, value) {
+  const min = Number(field.min ?? 0);
+  const max = Number(field.max);
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(max) || max <= min || !Number.isFinite(numericValue)) {
+    return { '--range-fill': '0%' };
+  }
+
+  const pct = Math.min(100, Math.max(0, ((numericValue - min) / (max - min)) * 100));
+  return { '--range-fill': `${pct}%` };
+}
+
 function InputField({ field, value, onChange }) {
   const [showTip, setShowTip] = useState(false);
 
@@ -65,6 +78,7 @@ function InputField({ field, value, onChange }) {
               max={field.max}
               step={field.step ?? 1}
               value={value}
+              style={getRangeFillStyle(field, value)}
               onChange={(e) => onChange(field.key, Number(e.target.value))}
             />
           )}
@@ -160,6 +174,8 @@ export default function CalculatorLayout({
     results,
     shareMsg,
     handleShare,
+    publicShareMsg,
+    handlePublicShare,
     handlePdf,
   } = useCalculatorPage(id, defaults, calculate);
 
@@ -189,6 +205,14 @@ export default function CalculatorLayout({
             getConfig={getConfig}
             applyConfig={applyConfig}
           />
+          <button
+            type="button"
+            className="mini-btn"
+            onClick={() => handlePublicShare(title)}
+          >
+            <span className="material-symbols-rounded">public</span>
+            Public link
+          </button>
           <button type="button" className="mini-btn" onClick={handleShare}>
             <span className="material-symbols-rounded">share</span>
             Share
@@ -197,7 +221,9 @@ export default function CalculatorLayout({
             <span className="material-symbols-rounded">download</span>
             PDF Report
           </button>
-          {shareMsg && <span className="calc-share-msg">{shareMsg}</span>}
+          {(shareMsg || publicShareMsg) && (
+            <span className="calc-share-msg">{publicShareMsg || shareMsg}</span>
+          )}
         </div>
       </div>
 
@@ -235,7 +261,10 @@ export default function CalculatorLayout({
                 <div className="slbl">Results Summary</div>
                 <div className="calc-summary-grid">
                   {results.summary.map((item, i) => (
-                    <div className={`calc-summary-item tone-${item.tone || 'default'}`} key={i}>
+                    <div
+                      className={`calc-summary-item ${i === 0 ? 'is-featured' : ''} tone-${item.tone || 'default'}`}
+                      key={i}
+                    >
                       <div className="calc-summary-label">{item.label}</div>
                       <div className="calc-summary-value">{item.value}</div>
                       {item.sub && <div className="calc-summary-sub">{item.sub}</div>}

@@ -1,6 +1,7 @@
 node_modules/
 .env
 users.json
+public-configs.json
 npm-debug.log*
 
 .vercel

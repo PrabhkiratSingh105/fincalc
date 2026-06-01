@@ -29,3 +29,27 @@ export function readShareState(searchParams) {
   const encoded = searchParams.get('s');
   return decodeShareState(encoded);
 }
+
+async function parseApiResponse(response) {
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || 'Could not create share link.');
+  }
+  return data;
+}
+
+export async function createPublicConfigLink({ page, title, config }) {
+  const response = await fetch('/api/public-configs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ page, title, config }),
+  });
+  return parseApiResponse(response);
+}
+
+export async function fetchPublicConfig(page, token) {
+  const response = await fetch(
+    `/api/public-configs/${encodeURIComponent(page)}/${encodeURIComponent(token)}`
+  );
+  return parseApiResponse(response);
+}

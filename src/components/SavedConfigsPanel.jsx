@@ -5,6 +5,7 @@ import {
   saveConfig,
   updateConfig,
 } from '../utils/savedConfigs';
+import { createPublicConfigLink } from '../utils/share';
 
 function formatDate(iso) {
   return new Date(iso).toLocaleString('en-IN', {
@@ -112,6 +113,22 @@ export default function SavedConfigsPanel({
     }
     refresh();
     showSuccess(`Deleted "${entry.name}".`);
+  };
+
+  const handlePublicShare = async (entry) => {
+    try {
+      showSuccess('Creating public link...');
+      const data = await createPublicConfigLink({
+        page: storageKey,
+        title: entry.name,
+        config: entry.config,
+      });
+      const url = data.url || `${window.location.origin}/${storageKey}/${data.token}`;
+      await navigator.clipboard.writeText(url);
+      showSuccess(`Public link copied for "${entry.name}".`);
+    } catch (err) {
+      showError(err.message || 'Could not create public link.');
+    }
   };
 
   return (
@@ -241,6 +258,13 @@ export default function SavedConfigsPanel({
                         onClick={() => startRename(entry)}
                       >
                         Rename
+                      </button>
+                      <button
+                        type="button"
+                        className="saved-config-action"
+                        onClick={() => handlePublicShare(entry)}
+                      >
+                        Public link
                       </button>
                       {pendingDeleteId === entry.id ? (
                         <>

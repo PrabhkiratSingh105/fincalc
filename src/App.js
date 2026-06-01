@@ -68,20 +68,20 @@ function App() {
 
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/sip" element={<SIPCalculator />} />
-            <Route path="/lumpsum" element={<LumpsumCalculator />} />
-            <Route path="/ppf" element={<PPFCalculator />} />
-            <Route path="/swp" element={<SWPCalculator />} />
-            <Route path="/loan" element={<LoanCalculator />} />
-            <Route path="/retirement" element={<RetirementCalculator />} />
-            <Route path="/goal-sip" element={<GoalSipCalculator />} />
-            <Route path="/inflation" element={<InflationCalculator />} />
-            <Route path="/cagr" element={<CagrCalculator />} />
-            <Route path="/loan-prepayment" element={<LoanPrepaymentCalculator />} />
-            <Route path="/loan-eligibility" element={<LoanEligibilityCalculator />} />
-            <Route path="/income-tax" element={<IncomeTaxCalculator />} />
-            <Route path="/fd" element={<FdCalculator />} />
-            <Route path="/rd" element={<RdCalculator />} />
+            <Route path="/sip/:shareToken?" element={<SIPCalculator />} />
+            <Route path="/lumpsum/:shareToken?" element={<LumpsumCalculator />} />
+            <Route path="/ppf/:shareToken?" element={<PPFCalculator />} />
+            <Route path="/swp/:shareToken?" element={<SWPCalculator />} />
+            <Route path="/loan/:shareToken?" element={<LoanCalculator />} />
+            <Route path="/retirement/:shareToken?" element={<RetirementCalculator />} />
+            <Route path="/goal-sip/:shareToken?" element={<GoalSipCalculator />} />
+            <Route path="/inflation/:shareToken?" element={<InflationCalculator />} />
+            <Route path="/cagr/:shareToken?" element={<CagrCalculator />} />
+            <Route path="/loan-prepayment/:shareToken?" element={<LoanPrepaymentCalculator />} />
+            <Route path="/loan-eligibility/:shareToken?" element={<LoanEligibilityCalculator />} />
+            <Route path="/income-tax/:shareToken?" element={<IncomeTaxCalculator />} />
+            <Route path="/fd/:shareToken?" element={<FdCalculator />} />
+            <Route path="/rd/:shareToken?" element={<RdCalculator />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

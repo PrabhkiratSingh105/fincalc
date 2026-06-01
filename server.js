@@ -9,7 +9,24 @@ loadEnv();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const USERS_FILE = path.join(__dirname, 'users.json');
+const PUBLIC_CONFIGS_FILE = path.join(__dirname, 'public-configs.json');
 const MAX_HISTORY_ITEMS = 50;
+const VALID_PUBLIC_PAGES = new Set([
+  'sip',
+  'lumpsum',
+  'ppf',
+  'swp',
+  'loan',
+  'retirement',
+  'goal-sip',
+  'inflation',
+  'cagr',
+  'loan-prepayment',
+  'loan-eligibility',
+  'income-tax',
+  'fd',
+  'rd',
+]);
 
 app.use(express.json({ limit: '20kb' }));
 
@@ -87,6 +104,39 @@ async function readUsers() {
 
 async function writeUsers(users) {
   await fsp.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
+}
+
+async function readPublicConfigs() {
+  try {
+    return JSON.parse(await fsp.readFile(PUBLIC_CONFIGS_FILE, 'utf8'));
+  } catch (err) {
+    if (err.code === 'ENOENT') return [];
+    throw err;
+  }
+}
+
+async function writePublicConfigs(configs) {
+  await fsp.writeFile(PUBLIC_CONFIGS_FILE, JSON.stringify(configs, null, 2));
+}
+
+function createPublicToken(existingConfigs) {
+  const letters = 'abcdefghijklmnopqrstuvwxyz';
+  let token = '';
+
+  do {
+    token = Array.from({ length: 12 }, () => letters[crypto.randomInt(letters.length)]).join('');
+  } while (existingConfigs.some((entry) => entry.token === token));
+
+  return token;
+}
+
+function normalizePublicConfig(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+
+  return Object.fromEntries(
+    Object.entries(input)
+      .filter(([key, value]) => /^[a-zA-Z0-9_-]{1,48}$/.test(key) && ['string', 'number', 'boolean'].includes(typeof value))
+  );
 }
 
 async function getAuthUser(req) {
@@ -209,6 +259,65 @@ app.delete('/api/history/:id', requireAuth, async (req, res) => {
   req.auth.user.history = (req.auth.user.history || []).filter((item) => item.id !== req.params.id);
   await writeUsers(req.auth.users);
   res.json({ history: req.auth.user.history });
+});
+
+app.post('/api/public-configs', async (req, res) => {
+  try {
+    const page = String(req.body.page || '').trim();
+    const title = String(req.body.title || '').trim().slice(0, 120);
+    const config = normalizePublicConfig(req.body.config);
+
+    if (!VALID_PUBLIC_PAGES.has(page)) {
+      return res.status(400).json({ message: 'Invalid calculator page.' });
+    }
+    if (!config || Object.keys(config).length === 0) {
+      return res.status(400).json({ message: 'Configuration data is incomplete.' });
+    }
+
+    const configs = await readPublicConfigs();
+    const token = createPublicToken(configs);
+    const entry = {
+      token,
+      page,
+      title: title || `${page} configuration`,
+      config,
+      createdAt: new Date().toISOString(),
+    };
+
+    configs.unshift(entry);
+    await writePublicConfigs(configs.slice(0, 500));
+
+    res.status(201).json({
+      token,
+      url: `${req.protocol}://${req.get('host')}/${page}/${token}`,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Could not create public link.' });
+  }
+});
+
+app.get('/api/public-configs/:page/:token', async (req, res) => {
+  try {
+    const page = String(req.params.page || '').trim();
+    const token = String(req.params.token || '').trim().toLowerCase();
+
+    if (!VALID_PUBLIC_PAGES.has(page) || !/^[a-z]{12}$/.test(token)) {
+      return res.status(404).json({ message: 'Shared configuration not found.' });
+    }
+
+    const configs = await readPublicConfigs();
+    const entry = configs.find((item) => item.page === page && item.token === token);
+    if (!entry) return res.status(404).json({ message: 'Shared configuration not found.' });
+
+    res.json({
+      page: entry.page,
+      title: entry.title,
+      config: entry.config,
+      createdAt: entry.createdAt,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Could not load public link.' });
+  }
 });
 
 // SPA fallback: React build, or standalone main.html when not built yet
