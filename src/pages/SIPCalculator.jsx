@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import CalculatorLayout from '../components/calculator/CalculatorLayout';
 import { calculateSip } from '../calculators';
+import TaxGainHarvestingModal from '../components/calculator/TaxGainHarvestingModal';
 
 const FIELDS = [
   {
@@ -82,8 +83,10 @@ const FIELDS = [
     label: 'Step-Up Value',
     min: 0,
     max: 100000,
+    rangeMax: 100, // Slider max for percentage mode
     step: 1,
-    tooltip: 'Annual step-up percentage or fixed rupee amount.',
+    tooltip: 'Annual step-up: percentage (0-100%) if type is "% Annual Increase", or rupees if "Fixed ₹ Increase".',
+    suffix: (i) => i.stepUpType === 'pct' ? '%' : '₹',
     showWhen: (i) => i.mode === 'stepup' && i.stepUpType !== 'infl',
   },
   {
@@ -103,6 +106,13 @@ const FIELDS = [
     tooltip: 'For inflation-adjusted results and inflation-linked step-up.',
     showWhen: (i) => i.mode !== 'goal',
   },
+  {
+    key: 'harvestingEnabled',
+    label: 'Tax Gain Harvesting',
+    type: 'toggle',
+    tooltip: 'Automatically harvest gains up to ₹1.25L annually to optimize tax liability.',
+    hasInfoButton: true,
+  },
 ];
 
 const DEFAULTS = {
@@ -117,25 +127,36 @@ const DEFAULTS = {
   stepUpValue: 10,
   taxRate: 12.5,
   inflation: 6,
+  harvestingEnabled: false,
 };
 
 const SECTIONS = [
   { title: 'Mode & Goal', fields: ['mode', 'goalAmount'] },
   { title: 'Investment', fields: ['initialLumpsum', 'monthlyAmount', 'years', 'ratePercentage'], divider: true },
   { title: 'Step-Up', fields: ['stepUpType', 'stepUpValue'] },
-  { title: 'Adjustments', fields: ['expenseRatio', 'taxRate', 'inflation'] },
+  { title: 'Adjustments', fields: ['expenseRatio', 'taxRate', 'inflation', 'harvestingEnabled'] },
 ];
 
 export default function SIPCalculator() {
+  const [showHarvestingModal, setShowHarvestingModal] = useState(false);
+
   return (
-    <CalculatorLayout
-      id="sip"
-      title="SIP Calculator"
-      description="Advanced SIP calculator with step-up, goal-based planning, expense ratio, LTCG tax and inflation-adjusted returns — with full breakdown."
-      fields={FIELDS}
-      defaults={DEFAULTS}
-      calculate={calculateSip}
-      inputSections={SECTIONS}
-    />
+    <>
+      <CalculatorLayout
+        id="sip"
+        title="SIP Calculator"
+        description="Advanced SIP calculator with step-up, goal-based planning, expense ratio, LTCG tax and inflation-adjusted returns — with full breakdown."
+        fields={FIELDS}
+        defaults={DEFAULTS}
+        calculate={calculateSip}
+        inputSections={SECTIONS}
+        onInfoButtonClick={(fieldKey) => {
+          if (fieldKey === 'harvestingEnabled') {
+            setShowHarvestingModal(true);
+          }
+        }}
+      />
+      {showHarvestingModal && <TaxGainHarvestingModal onClose={() => setShowHarvestingModal(false)} />}
+    </>
   );
 }

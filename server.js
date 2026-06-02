@@ -119,17 +119,6 @@ async function writePublicConfigs(configs) {
   await fsp.writeFile(PUBLIC_CONFIGS_FILE, JSON.stringify(configs, null, 2));
 }
 
-function createPublicToken(existingConfigs) {
-  const letters = 'abcdefghijklmnopqrstuvwxyz';
-  let token = '';
-
-  do {
-    token = Array.from({ length: 12 }, () => letters[crypto.randomInt(letters.length)]).join('');
-  } while (existingConfigs.some((entry) => entry.token === token));
-
-  return token;
-}
-
 function normalizePublicConfig(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
 
@@ -183,7 +172,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
     if (user) return res.status(409).json({ message: 'Username already exists. Please login.' });
     const { salt, hash } = hashPassword(password);
-    const newUser = { username, salt, passwordHash: hash, history: [], createdAt: new Date().toISOString() };
+    const newUser = { username, salt, passwordHash: hash, history: [], configs: {}, createdAt: new Date().toISOString() };
     const token = createSession(newUser);
     users.push(newUser);
     await writeUsers(users);
@@ -261,59 +250,184 @@ app.delete('/api/history/:id', requireAuth, async (req, res) => {
   res.json({ history: req.auth.user.history });
 });
 
-app.post('/api/public-configs', async (req, res) => {
+app.get('/api/configs/:page', requireAuth, (req, res) => {
+  const page = String(req.params.page || '').trim();
+  const configs = (req.auth.user.configs && req.auth.user.configs[page]) || [];
+  res.json({ configs });
+});
+
+app.post('/api/configs/:page', requireAuth, async (req, res) => {
+  try {
+    const page = String(req.params.page || '').trim();
+    const name = String(req.body.name || '').trim();
+    const config = req.body.config && typeof req.body.config === 'object' ? req.body.config : null;
+
+    if (!page) {
+      return res.status(400).json({ message: 'Invalid page.' });
+    }
+    if (!name) {
+      return res.status(400).json({ message: 'Name is required.' });
+    }
+    if (!config) {
+      return res.status(400).json({ message: 'Configuration data is incomplete.' });
+    }
+    if (Object.keys(config).length === 0) {
+      return res.status(400).json({ message: 'Configuration data is incomplete.' });
+    }
+
+    if (!req.auth.user.configs) {
+      req.auth.user.configs = {};
+    }
+    if (!req.auth.user.configs[page]) {
+      req.auth.user.configs[page] = [];
+    }
+
+    const configEntry = {
+      id: crypto.randomUUID(),
+      name,
+      config,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    req.auth.user.configs[page].unshift(configEntry);
+    await writeUsers(req.auth.users);
+    res.status(201).json({ config: configEntry });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Could not save configuration.' });
+  }
+});
+
+app.put('/api/configs/:page/:id', requireAuth, async (req, res) => {
+  try {
+    const page = String(req.params.page || '').trim();
+    const id = String(req.params.id || '').trim();
+    const name = req.body.name !== undefined ? String(req.body.name || '').trim() : null;
+    const config = req.body.config && typeof req.body.config === 'object' ? req.body.config : null;
+
+    if (!page || !id) {
+      return res.status(400).json({ message: 'Invalid page or config id.' });
+    }
+
+    if (!req.auth.user.configs || !req.auth.user.configs[page]) {
+      return res.status(404).json({ message: 'Configuration not found.' });
+    }
+
+    const configEntry = req.auth.user.configs[page].find((c) => c.id === id);
+    if (!configEntry) {
+      return res.status(404).json({ message: 'Configuration not found.' });
+    }
+
+    if (name !== null) {
+      configEntry.name = name;
+    }
+    if (config) {
+      configEntry.config = config;
+    }
+    configEntry.updatedAt = new Date().toISOString();
+
+    await writeUsers(req.auth.users);
+    res.json({ config: configEntry });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Could not update configuration.' });
+  }
+});
+
+app.delete('/api/configs/:page/:id', requireAuth, async (req, res) => {
+  try {
+    const page = String(req.params.page || '').trim();
+    const id = String(req.params.id || '').trim();
+
+    if (!page || !id) {
+      return res.status(400).json({ message: 'Invalid page or config id.' });
+    }
+
+    if (!req.auth.user.configs || !req.auth.user.configs[page]) {
+      return res.status(404).json({ message: 'Configuration not found.' });
+    }
+
+    req.auth.user.configs[page] = req.auth.user.configs[page].filter((c) => c.id !== id);
+    await writeUsers(req.auth.users);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Could not delete configuration.' });
+  }
+});
+
+app.post('/api/public-configs', requireAuth, async (req, res) => {
   try {
     const page = String(req.body.page || '').trim();
-    const title = String(req.body.title || '').trim().slice(0, 120);
+    const configName = String(req.body.configName || '').trim();
     const config = normalizePublicConfig(req.body.config);
 
     if (!VALID_PUBLIC_PAGES.has(page)) {
       return res.status(400).json({ message: 'Invalid calculator page.' });
+    }
+    if (!configName) {
+      return res.status(400).json({ message: 'Configuration name is required.' });
     }
     if (!config || Object.keys(config).length === 0) {
       return res.status(400).json({ message: 'Configuration data is incomplete.' });
     }
 
     const configs = await readPublicConfigs();
-    const token = createPublicToken(configs);
-    const entry = {
-      token,
-      page,
-      title: title || `${page} configuration`,
-      config,
-      createdAt: new Date().toISOString(),
-    };
-
-    configs.unshift(entry);
+    const username = req.auth.user.username;
+    
+    // Check if a config with this name already exists for this user and page
+    const existingEntry = configs.find(
+      (item) => item.page === page && item.username === username && item.configName === configName
+    );
+    
+    if (existingEntry) {
+      // Update existing entry
+      existingEntry.config = config;
+      existingEntry.updatedAt = new Date().toISOString();
+    } else {
+      // Create new entry
+      const entry = {
+        page,
+        username,
+        configName,
+        config,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      configs.unshift(entry);
+    }
+    
     await writePublicConfigs(configs.slice(0, 500));
 
     res.status(201).json({
-      token,
-      url: `${req.protocol}://${req.get('host')}/${page}/${token}`,
+      url: `${req.protocol}://${req.get('host')}/${page}/${username}/config/${encodeURIComponent(configName)}`,
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Could not create public link.' });
   }
 });
 
-app.get('/api/public-configs/:page/:token', async (req, res) => {
+app.get('/api/public-configs/:page/:username/:configName', async (req, res) => {
   try {
     const page = String(req.params.page || '').trim();
-    const token = String(req.params.token || '').trim().toLowerCase();
+    const username = String(req.params.username || '').trim();
+    const configName = decodeURIComponent(String(req.params.configName || '').trim());
 
-    if (!VALID_PUBLIC_PAGES.has(page) || !/^[a-z]{12}$/.test(token)) {
+    if (!VALID_PUBLIC_PAGES.has(page)) {
       return res.status(404).json({ message: 'Shared configuration not found.' });
     }
 
     const configs = await readPublicConfigs();
-    const entry = configs.find((item) => item.page === page && item.token === token);
+    const entry = configs.find(
+      (item) => item.page === page && item.username === username && item.configName === configName
+    );
     if (!entry) return res.status(404).json({ message: 'Shared configuration not found.' });
 
     res.json({
       page: entry.page,
-      title: entry.title,
+      username: entry.username,
+      configName: entry.configName,
       config: entry.config,
       createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Could not load public link.' });

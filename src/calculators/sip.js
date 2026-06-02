@@ -1,6 +1,8 @@
 import { formatINR, formatPercent, parseNum } from '../utils/format';
 import { buildInsights } from '../utils/calculatorHelpers';
 
+const LTCG_EXEMPTION_LIMIT = 125000; // ₹1,25,000
+
 function runSimulation(params, sipAmount, includeInflAdj = true) {
   const {
     initialLumpsum,
@@ -12,6 +14,7 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
     mode,
     stepUpType,
     stepUpValue,
+    harvestingEnabled,
   } = params;
 
   const rAnn = ratePercentage / 100;
@@ -25,12 +28,17 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
   let investedInflAdj = initialLumpsum;
   let expenseDrag = 0;
   let currentSIP = sipAmount;
+  let costBasis = initialLumpsum;
+  let totalHarvestedGains = 0;
   const yearlyData = [];
+  const harvestedGainHistory = [];
+  const costBasisHistory = [];
 
   for (let month = 1; month <= months; month++) {
     const sipThisMonth = currentSIP;
     corpus += sipThisMonth;
     sipInvested += sipThisMonth;
+    costBasis += sipThisMonth;
 
     if (month % 12 === 0) {
       corpus *= 1 + rAnn;
@@ -40,8 +48,23 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
         corpus = afterEr;
       }
 
-      const invested = initialLumpsum + sipInvested;
       const yr = month / 12;
+      
+      // Tax Gain Harvesting Logic (Mode A: Optimal Harvesting)
+      let harvestedThisYear = 0;
+      if (harvestingEnabled) {
+        const unrealizedGain = Math.max(0, corpus - costBasis);
+        harvestedThisYear = Math.min(unrealizedGain, LTCG_EXEMPTION_LIMIT);
+        if (harvestedThisYear > 0) {
+          costBasis += harvestedThisYear;
+          totalHarvestedGains += harvestedThisYear;
+        }
+      }
+      
+      harvestedGainHistory.push(harvestedThisYear);
+      costBasisHistory.push(costBasis);
+
+      const invested = initialLumpsum + sipInvested;
       const yearGains = Math.max(0, corpus - invested);
       const yearTax = Math.max(0, yearGains - 125000) * tax;
       const postTax = corpus - yearTax;
@@ -55,9 +78,11 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
         year: yr,
         corpus,
         invested,
+        costBasis,
         postTax,
         inflationAdjustedPostTax: postTax / Math.pow(1 + Math.max(0, inf), yr),
         investedInflAdj: includeInflAdj ? investedInflAdj : invested,
+        harvestedThisYear,
       });
 
       if (month < months && mode === 'stepup') {
@@ -74,7 +99,25 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
 
   const invested = initialLumpsum + sipInvested;
   const gains = Math.max(0, corpus - invested);
-  const taxAmount = Math.max(0, gains - 125000) * tax;
+  
+  // Calculate tax with harvesting consideration
+  let taxableGain = gains;
+  let taxAmount = 0;
+  let taxSavedByHarvesting = 0;
+  
+  if (harvestingEnabled) {
+    // With harvesting: taxable gain is reduced by harvested amounts
+    const finalTaxableGain = Math.max(0, corpus - costBasis);
+    taxableGain = finalTaxableGain;
+    taxAmount = Math.max(0, finalTaxableGain - LTCG_EXEMPTION_LIMIT) * tax;
+    
+    // Calculate tax that would have been paid without harvesting
+    const taxWithoutHarvesting = Math.max(0, gains - LTCG_EXEMPTION_LIMIT) * tax;
+    taxSavedByHarvesting = Math.max(0, taxWithoutHarvesting - taxAmount);
+  } else {
+    taxAmount = Math.max(0, gains - LTCG_EXEMPTION_LIMIT) * tax;
+  }
+  
   const postTaxValue = corpus - taxAmount;
   const inflationAdjusted = postTaxValue / Math.pow(1 + inf, years);
   const profitLoss = Math.round(inflationAdjusted - investedInflAdj);
@@ -93,6 +136,13 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
     profitLoss,
     isProfit: profitLoss >= 0,
     yearlyData,
+    harvestingEnabled,
+    totalHarvestedGains,
+    finalCostBasis: costBasis,
+    finalTaxableGain: taxableGain,
+    taxSavedByHarvesting,
+    harvestedGainHistory,
+    costBasisHistory,
   };
 }
 
@@ -137,6 +187,7 @@ export function calculate(inputs) {
     stepUpValue: parseNum(inputs.stepUpValue, 10),
     taxRate: parseNum(inputs.taxRate, 12.5),
     inflation: parseNum(inputs.inflation, 6),
+    harvestingEnabled: inputs.harvestingEnabled === true || inputs.harvestingEnabled === 'true',
   };
 
   let sim;
@@ -165,6 +216,7 @@ export function calculate(inputs) {
     d.year,
     formatINR(Math.round(d.invested)),
     formatINR(Math.round(d.corpus)),
+    formatINR(Math.round(d.costBasis)),
     formatINR(Math.round(d.postTax)),
     formatINR(Math.round(d.inflationAdjustedPostTax)),
   ]);
@@ -172,7 +224,8 @@ export function calculate(inputs) {
   const labels = sim.yearlyData.map((d) => `Year ${d.year}`);
   const isGoal = engineParams.mode === 'goal';
 
-  const summary = isGoal
+  // Summary cards with harvesting results
+  const summaryBase = isGoal
     ? [
         { label: 'Required Monthly SIP', value: formatINR(goalMeta.requiredMonthlySIP), tone: 'primary', sub: goalMeta.goalAlreadyMet ? 'Lumpsum alone meets goal' : `To reach ${formatINR(goalMeta.goalAmount)}` },
         { label: 'Target Goal', value: formatINR(Math.round(goalMeta.goalAmount)), tone: 'success' },
@@ -184,16 +237,34 @@ export function calculate(inputs) {
         { label: 'Real Profit/Loss', value: formatINR(Math.abs(sim.profitLoss)), tone: sim.isProfit ? 'success' : 'danger', sub: sim.isProfit ? 'Gain vs inflation-adj. cost' : 'Loss vs inflation-adj. cost' },
         { label: 'Post-Tax Nominal', value: formatINR(Math.round(sim.postTaxValue)), sub: 'At maturity' },
         { label: 'Total Invested', value: formatINR(Math.round(sim.invested)) },
-        { label: 'Tax on Gains', value: formatINR(Math.round(sim.taxAmount)), sub: 'After ₹1.25L exemption' },
+        { label: 'Tax on Gains', value: formatINR(Math.round(sim.taxAmount)), sub: 'After exemptions' },
         { label: 'Expense Ratio Cost', value: formatINR(Math.round(sim.expenseDrag)), sub: 'Fees eroded from corpus' },
       ];
+
+  // Add harvesting-specific summary cards if enabled
+  const summary = sim.harvestingEnabled
+    ? [
+        ...summaryBase,
+        { label: 'Tax Gain Harvesting Status', value: 'Enabled', tone: 'success', sub: 'Annual harvesting active' },
+        { label: 'Total Harvested Gains', value: formatINR(Math.round(sim.totalHarvestedGains)), tone: 'primary', sub: 'Up to ₹1.25L/year' },
+        { label: 'Updated Cost Basis', value: formatINR(Math.round(sim.finalCostBasis)), sub: 'After harvesting' },
+        { label: 'Estimated Tax Saved', value: formatINR(Math.round(sim.taxSavedByHarvesting)), tone: 'success', sub: 'vs. no harvesting' },
+        { label: 'Final Taxable Gain', value: formatINR(Math.round(sim.finalTaxableGain)), sub: 'At withdrawal' },
+        { label: 'Total LTCG Tax', value: formatINR(Math.round(sim.taxAmount)), sub: 'With harvesting' },
+      ]
+    : summaryBase;
 
   const steps = [
     `Mode: ${engineParams.mode === 'goal' ? 'Goal-Based' : engineParams.mode === 'stepup' ? 'Step-Up SIP' : 'Simple SIP'}`,
     `Initial lumpsum ${formatINR(engineParams.initialLumpsum)} + SIP contributions over ${engineParams.years} years`,
     `Year-end: return ${formatPercent(engineParams.ratePercentage)} applied; expense ratio ${formatPercent(engineParams.expenseRatio)} deducted from total corpus`,
+    engineParams.harvestingEnabled
+      ? `Tax Gain Harvesting: ${formatINR(Math.round(sim.totalHarvestedGains))} harvested across ${engineParams.years} years (up to ₹1.25L/year)`
+      : 'Tax Gain Harvesting: Disabled',
     `Corpus at maturity = ${formatINR(Math.round(sim.corpus))}; gains = ${formatINR(Math.round(sim.gains))}`,
-    `Tax = max(0, gains − ₹1,25,000) × ${formatPercent(engineParams.taxRate)} = ${formatINR(Math.round(sim.taxAmount))}`,
+    engineParams.harvestingEnabled
+      ? `With harvesting: final cost basis = ${formatINR(Math.round(sim.finalCostBasis))}; taxable gain = ${formatINR(Math.round(sim.finalTaxableGain))}; tax = ${formatINR(Math.round(sim.taxAmount))}`
+      : `Tax = max(0, gains − ₹1,25,000) × ${formatPercent(engineParams.taxRate)} = ${formatINR(Math.round(sim.taxAmount))}`,
     `Post-tax = ${formatINR(Math.round(sim.postTaxValue))}; inflation-adjusted = ${formatINR(Math.round(sim.inflationAdjusted))}`,
   ];
 
@@ -217,6 +288,11 @@ export function calculate(inputs) {
         { label: 'Nominal (post-tax)', data: sim.yearlyData.map((d) => Math.round(d.postTax)) },
       ];
 
+  // Add cost basis dataset if harvesting enabled
+  const costBasisDataset = sim.harvestingEnabled
+    ? [{ label: 'Cost Basis', data: sim.yearlyData.map((d) => Math.round(d.costBasis)) }]
+    : [];
+
   const breakdownSlices = [
     ['Invested', Math.round(sim.invested)],
     ['Returns (net)', Math.max(0, Math.round(sim.gains - sim.taxAmount))],
@@ -230,7 +306,9 @@ export function calculate(inputs) {
     assumptions: [
       'Monthly SIP added each month; return and expense ratio applied at year-end on total corpus',
       'Expense ratio deducted every year from lumpsum + SIP combined balance',
-      'Tax applied once at maturity on profit (gains above ₹1.25L LTCG exemption)',
+      sim.harvestingEnabled
+        ? `Tax Gain Harvesting: ${formatINR(Math.round(sim.totalHarvestedGains))} harvested over ${engineParams.years} years; estimated tax saved: ${formatINR(Math.round(sim.taxSavedByHarvesting))}`
+        : 'Tax applied once at maturity on profit (gains above ₹1.25L LTCG exemption)',
       'Inflation adjustment uses midpoint discount for SIP contributions',
       engineParams.mode === 'stepup' ? `Step-up: ${engineParams.stepUpType} by ${engineParams.stepUpValue}` : null,
     ].filter(Boolean),
@@ -238,7 +316,7 @@ export function calculate(inputs) {
       {
         title: isGoal ? 'Path to Goal' : 'Portfolio Growth',
         type: 'line',
-        data: { labels, datasets: chartDatasets },
+        data: { labels, datasets: [...chartDatasets, ...costBasisDataset] },
         height: 280,
       },
       {
@@ -253,33 +331,72 @@ export function calculate(inputs) {
     ],
     yearlyTable: {
       title: 'Year-by-Year Projection',
-      columns: ['Year', 'Invested', 'Corpus', 'Post-Tax', 'Inflation-Adj.'],
-      rows,
+      columns: sim.harvestingEnabled
+        ? ['Year', 'Invested', 'Corpus', 'Cost Basis', 'Post-Tax', 'Inflation-Adj.']
+        : ['Year', 'Invested', 'Corpus', 'Post-Tax', 'Inflation-Adj.'],
+      rows: sim.harvestingEnabled
+        ? sim.yearlyData.map((d) => [
+            d.year,
+            formatINR(Math.round(d.invested)),
+            formatINR(Math.round(d.corpus)),
+            formatINR(Math.round(d.costBasis)),
+            formatINR(Math.round(d.postTax)),
+            formatINR(Math.round(d.inflationAdjustedPostTax)),
+          ])
+        : rows,
     },
     insights: buildInsights({
       takeaways: [
         isGoal
           ? `Invest ${formatINR(goalMeta.requiredMonthlySIP)}/month to reach ${formatINR(goalMeta.goalAmount)} in ${engineParams.years} years.`
           : `Real value of portfolio: ${formatINR(Math.round(sim.inflationAdjusted))} in today's rupees.`,
+        sim.harvestingEnabled
+          ? `Tax Gain Harvesting saved ${formatINR(Math.round(sim.taxSavedByHarvesting))} in taxes by harvesting ₹1.25L gains annually.`
+          : 'Enable Tax Gain Harvesting to optimize tax liability and increase cost basis.',
         `Expense ratio eroded ${formatINR(Math.round(sim.expenseDrag))} from corpus over ${engineParams.years} years.`,
       ],
       mistakes: [
         'Ignoring expense ratio — even 1% p.a. significantly reduces long-term corpus.',
         'Comparing nominal returns without inflation-adjusting both corpus and contributions.',
+        'Missing Tax Gain Harvesting opportunity — can reduce taxable gains significantly.',
       ],
       tips: [
         'Use step-up SIP to align contributions with salary growth.',
         'Goal-based mode helps reverse-engineer the SIP needed for targets.',
+        'Enable Tax Gain Harvesting to optimize tax liability within LTCG exemption limits.',
       ],
-      formula: 'Corpus grows with SIP + return − expense; Tax = max(0, gains − 1.25L) × rate',
-      example: '₹50K/month SIP at 12% for 10 years → ~₹1.15 Cr corpus; ~₹58L inflation-adjusted at 6% inflation.',
+      formula: sim.harvestingEnabled
+        ? 'With harvesting: Harvest = min(gains, ₹1.25L) annually; New cost basis += harvest; Tax = max(0, final gains − ₹1.25L) × rate'
+        : 'Corpus grows with SIP + return − expense; Tax = max(0, gains − 1.25L) × rate',
+      example: sim.harvestingEnabled
+        ? `₹50K/month SIP at 12% for 10 years: Without harvesting ~₹13.2L tax; With harvesting ~${formatINR(Math.round(sim.taxAmount))} tax (saved ${formatINR(Math.round(sim.taxSavedByHarvesting))}).`
+        : '₹50K/month SIP at 12% for 10 years → ~₹1.15 Cr corpus; ~₹58L inflation-adjusted at 6% inflation.',
       inflation: `Inflation-adjusted post-tax value: ${formatINR(Math.round(sim.inflationAdjusted))}.`,
-      tax: `LTCG at ${formatPercent(engineParams.taxRate)} on gains above ₹1.25 lakh. Tax paid: ${formatINR(Math.round(sim.taxAmount))}.`,
+      tax: sim.harvestingEnabled
+        ? `LTCG at ${formatPercent(engineParams.taxRate)} on gains. With harvesting: total tax ${formatINR(Math.round(sim.taxAmount))} (saved ${formatINR(Math.round(sim.taxSavedByHarvesting))}).`
+        : `LTCG at ${formatPercent(engineParams.taxRate)} on gains above ₹1.25 lakh. Tax paid: ${formatINR(Math.round(sim.taxAmount))}.`,
     }),
     pdfData: {
       title: 'SIP Calculator Report',
-      summary: summary.slice(0, 5).map((s) => ({ label: s.label, value: s.value })),
-      tables: [{ title: 'Yearly Projection', columns: ['Year', 'Invested', 'Corpus', 'Post-Tax', 'Inflation-Adj.'], rows }],
+      summary: summary.slice(0, 6).map((s) => ({ label: s.label, value: s.value })),
+      tables: [
+        {
+          title: 'Yearly Projection',
+          columns: sim.harvestingEnabled
+            ? ['Year', 'Invested', 'Corpus', 'Cost Basis', 'Post-Tax', 'Inflation-Adj.']
+            : ['Year', 'Invested', 'Corpus', 'Post-Tax', 'Inflation-Adj.'],
+          rows: sim.harvestingEnabled
+            ? sim.yearlyData.map((d) => [
+                d.year,
+                formatINR(Math.round(d.invested)),
+                formatINR(Math.round(d.corpus)),
+                formatINR(Math.round(d.costBasis)),
+                formatINR(Math.round(d.postTax)),
+                formatINR(Math.round(d.inflationAdjustedPostTax)),
+              ])
+            : rows,
+        },
+      ],
     },
     raw: { ...sim, goalMeta },
   };

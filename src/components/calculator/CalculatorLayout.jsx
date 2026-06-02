@@ -16,8 +16,16 @@ function getRangeFillStyle(field, value) {
   return { '--range-fill': `${pct}%` };
 }
 
-function InputField({ field, value, onChange }) {
+function InputField({ field, value, onChange, suffix, onInfoButtonClick }) {
   const [showTip, setShowTip] = useState(false);
+
+  // Determine max value for range slider (especially for percentage fields)
+  const getRangeMax = () => {
+    // If field specifies a rangeMax, use that
+    if (field.rangeMax !== undefined) return field.rangeMax;
+    // Otherwise use the regular max
+    return field.max;
+  };
 
   return (
     <div className="calc-input-group">
@@ -25,6 +33,16 @@ function InputField({ field, value, onChange }) {
         <label className="calc-label" htmlFor={field.key}>
           {field.label}
         </label>
+        {field.hasInfoButton && (
+          <button
+            type="button"
+            className="calc-info-btn"
+            onClick={() => onInfoButtonClick?.(field.key)}
+            aria-label={`Learn more about ${field.label}`}
+          >
+            <span className="material-symbols-rounded">help</span>
+          </button>
+        )}
         {field.tooltip && (
           <button
             type="button"
@@ -57,29 +75,44 @@ function InputField({ field, value, onChange }) {
             </option>
           ))}
         </select>
-      ) : (
-        <>
+      ) : field.type === 'toggle' ? (
+        <label className="calc-toggle">
           <input
             id={field.key}
-            type={field.type || 'number'}
-            className="calc-input"
-            value={value}
-            min={field.min}
-            max={field.max}
-            step={field.step ?? 1}
-            onChange={(e) =>
-              onChange(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)
-            }
+            type="checkbox"
+            checked={value === true || value === 'true'}
+            onChange={(e) => onChange(field.key, e.target.checked)}
           />
+          <span className="calc-toggle-slider"></span>
+        </label>
+      ) : (
+        <>
+          <div className={`calc-input-wrapper ${suffix ? 'has-suffix' : ''}`}>
+            <input
+              id={field.key}
+              type={field.type || 'number'}
+              className="calc-input"
+              value={value}
+              min={field.min}
+              max={field.max}
+              step={field.step ?? 1}
+              onWheel={(e) => e.currentTarget.blur()}
+              onChange={(e) =>
+                onChange(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)
+              }
+            />
+            {suffix && <span className="calc-input-suffix">{suffix}</span>}
+          </div>
           {field.showRange !== false && field.type !== 'select' && field.max != null && (
             <input
               type="range"
               min={field.min ?? 0}
-              max={field.max}
+              max={getRangeMax()}
               step={field.step ?? 1}
               value={value}
               style={getRangeFillStyle(field, value)}
               onChange={(e) => onChange(field.key, Number(e.target.value))}
+              className="calc-range-input"
             />
           )}
         </>
@@ -166,17 +199,13 @@ export default function CalculatorLayout({
   defaults,
   calculate,
   inputSections,
+  onInfoButtonClick,
 }) {
   const {
     inputs,
     setField,
     setInputs,
     results,
-    shareMsg,
-    handleShare,
-    publicShareMsg,
-    handlePublicShare,
-    handlePdf,
   } = useCalculatorPage(id, defaults, calculate);
 
   const getConfig = () => inputs;
@@ -184,12 +213,17 @@ export default function CalculatorLayout({
 
   const isVisible = (field) => !field.showWhen || field.showWhen(inputs);
 
+  const getSuffix = (field) => {
+    if (!field.suffix) return null;
+    return typeof field.suffix === 'function' ? field.suffix(inputs) : field.suffix;
+  };
+
   const renderFields = (keys) =>
     keys.map((key) => {
       const field = fields.find((f) => f.key === key);
       if (!field || !isVisible(field)) return null;
       return (
-        <InputField key={key} field={field} value={inputs[field.key]} onChange={setField} />
+        <InputField key={key} field={field} value={inputs[field.key]} onChange={setField} suffix={getSuffix(field)} onInfoButtonClick={onInfoButtonClick} />
       );
     });
 
@@ -204,26 +238,8 @@ export default function CalculatorLayout({
             pageLabel={title}
             getConfig={getConfig}
             applyConfig={applyConfig}
+            results={results}
           />
-          <button
-            type="button"
-            className="mini-btn"
-            onClick={() => handlePublicShare(title)}
-          >
-            <span className="material-symbols-rounded">public</span>
-            Public link
-          </button>
-          <button type="button" className="mini-btn" onClick={handleShare}>
-            <span className="material-symbols-rounded">share</span>
-            Share
-          </button>
-          <button type="button" className="mini-btn" onClick={handlePdf}>
-            <span className="material-symbols-rounded">download</span>
-            PDF Report
-          </button>
-          {(shareMsg || publicShareMsg) && (
-            <span className="calc-share-msg">{publicShareMsg || shareMsg}</span>
-          )}
         </div>
       </div>
 
@@ -250,6 +266,8 @@ export default function CalculatorLayout({
                   field={field}
                   value={inputs[field.key]}
                   onChange={setField}
+                  suffix={getSuffix(field)}
+                  onInfoButtonClick={onInfoButtonClick}
                 />
               ))}
         </aside>

@@ -47,9 +47,9 @@ export async function createPublicConfigLink({ page, title, config }) {
   return parseApiResponse(response);
 }
 
-export async function fetchPublicConfig(page, token) {
+export async function fetchPublicConfig(page, username, configName) {
   const response = await fetch(
-    `/api/public-configs/${encodeURIComponent(page)}/${encodeURIComponent(token)}`
+    `/api/public-configs/${encodeURIComponent(page)}/${encodeURIComponent(username)}/${encodeURIComponent(configName)}`
   );
   return parseApiResponse(response);
 }
