@@ -2,6 +2,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import { downloadPdfReport } from "../utils/pdfExport";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "./AuthModal";
+import {
+  deleteConfig as deleteLocalConfig,
+  listConfigs as listLocalConfigs,
+  saveConfig as saveLocalConfig,
+  updateConfig as updateLocalConfig,
+} from "../utils/savedConfigs";
 
 function formatDate(iso) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -34,49 +40,49 @@ export default function SavedConfigsPanel({
   const [shareUrl, setShareUrl] = useState('');
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [mode, setMode] = useState("view"); // 'view' or 'save'
+  const [usingLocalStore, setUsingLocalStore] = useState(false);
+
+  const readErrorMessage = async (response, fallback) => {
+    const data = await response.json().catch(() => ({}));
+    return data.message || fallback;
+  };
 
   const refresh = useCallback(async () => {
     if (!user || !token) {
-      console.log('Refresh: No user or token');
-      setConfigs([]);
+      setUsingLocalStore(true);
+      setConfigs(listLocalConfigs(storageKey));
       return;
     }
 
     try {
       setLoading(true);
-      console.log(`Fetching configs for ${storageKey}`);
       const response = await fetch(`/api/configs/${storageKey}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log('Response status:', response.status);
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        console.error('Fetch error:', data);
-        throw new Error(data.message || "Failed to fetch configurations");
+        throw new Error(await readErrorMessage(response, "Failed to fetch configurations"));
       }
 
       const data = await response.json();
-      console.log('Fetched configs:', data.configs?.length || 0);
+      setUsingLocalStore(false);
       setConfigs(data.configs || []);
     } catch (err) {
-      console.error('Refresh error:', err);
-      showError(err.message);
-      setConfigs([]);
+      setUsingLocalStore(true);
+      setConfigs(listLocalConfigs(storageKey));
+      showError("Server configs are unavailable, so local browser configs are shown.");
     } finally {
       setLoading(false);
     }
   }, [user, token, storageKey]);
 
   useEffect(() => {
-    if (open && user && token) {
+    if (open) {
       refresh();
       setMessage("");
       setError("");
       setEditingId(null);
       setPendingDeleteId(null);
-    } else if (open && !user) {
-      setAuthModalOpen(true);
     }
   }, [open, user, token, refresh]);
 
@@ -91,16 +97,18 @@ export default function SavedConfigsPanel({
   };
 
   const handleSaveNew = async () => {
-    if (!user || !token) {
-      console.log('Save: No user or token');
-      setAuthModalOpen(true);
-      return;
-    }
-
     try {
       setLoading(true);
       const configData = getConfig();
-      console.log(`Saving config for ${storageKey}`, { name: newName, config: configData });
+      if (!user || !token || usingLocalStore) {
+        saveLocalConfig(storageKey, newName, configData);
+        setNewName("");
+        setConfigs(listLocalConfigs(storageKey));
+        setUsingLocalStore(true);
+        showSuccess("Configuration saved locally.");
+        return;
+      }
+
       const response = await fetch(`/api/configs/${storageKey}`, {
         method: "POST",
         headers: {
@@ -113,19 +121,23 @@ export default function SavedConfigsPanel({
         }),
       });
 
-      console.log('Save response status:', response.status);
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        console.error('Save error:', data);
-        throw new Error(data.message || "Failed to save configuration");
+        throw new Error(await readErrorMessage(response, "Failed to save configuration"));
       }
 
       setNewName("");
       await refresh();
       showSuccess("Configuration saved.");
     } catch (err) {
-      console.error('Save error:', err);
-      showError(err.message);
+      try {
+        saveLocalConfig(storageKey, newName, getConfig());
+        setNewName("");
+        setConfigs(listLocalConfigs(storageKey));
+        setUsingLocalStore(true);
+        showSuccess("Configuration saved locally because server save failed.");
+      } catch (localErr) {
+        showError(localErr.message || err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -138,13 +150,15 @@ export default function SavedConfigsPanel({
   };
 
   const handleUpdate = async (entry) => {
-    if (!user || !token) {
-      setAuthModalOpen(true);
-      return;
-    }
-
     try {
       setLoading(true);
+      if (!user || !token || usingLocalStore) {
+        updateLocalConfig(storageKey, entry.id, { config: getConfig() });
+        setConfigs(listLocalConfigs(storageKey));
+        showSuccess(`Updated "${entry.name}" locally.`);
+        return;
+      }
+
       const response = await fetch(`/api/configs/${storageKey}/${entry.id}`, {
         method: "PUT",
         headers: {
@@ -157,8 +171,7 @@ export default function SavedConfigsPanel({
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to update configuration");
+        throw new Error(await readErrorMessage(response, "Failed to update configuration"));
       }
 
       await refresh();
@@ -182,13 +195,16 @@ export default function SavedConfigsPanel({
   };
 
   const handleRename = async (entry) => {
-    if (!user || !token) {
-      setAuthModalOpen(true);
-      return;
-    }
-
     try {
       setLoading(true);
+      if (!user || !token || usingLocalStore) {
+        updateLocalConfig(storageKey, entry.id, { name: editingName });
+        cancelRename();
+        setConfigs(listLocalConfigs(storageKey));
+        showSuccess("Configuration renamed locally.");
+        return;
+      }
+
       const response = await fetch(`/api/configs/${storageKey}/${entry.id}`, {
         method: "PUT",
         headers: {
@@ -201,8 +217,7 @@ export default function SavedConfigsPanel({
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to rename configuration");
+        throw new Error(await readErrorMessage(response, "Failed to rename configuration"));
       }
 
       cancelRename();
@@ -216,21 +231,26 @@ export default function SavedConfigsPanel({
   };
 
   const handleDelete = async (entry) => {
-    if (!user || !token) {
-      setAuthModalOpen(true);
-      return;
-    }
-
     try {
       setLoading(true);
+      if (!user || !token || usingLocalStore) {
+        deleteLocalConfig(storageKey, entry.id);
+        setPendingDeleteId(null);
+        if (editingId === entry.id) {
+          cancelRename();
+        }
+        setConfigs(listLocalConfigs(storageKey));
+        showSuccess(`Deleted "${entry.name}" locally.`);
+        return;
+      }
+
       const response = await fetch(`/api/configs/${storageKey}/${entry.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to delete configuration");
+        throw new Error(await readErrorMessage(response, "Failed to delete configuration"));
       }
 
       setPendingDeleteId(null);
@@ -300,13 +320,10 @@ export default function SavedConfigsPanel({
           type="button"
           className="mini-btn primary"
           onClick={() => {
-            if (!user) {
-              setAuthModalOpen(true);
-            } else {
-              setNewName("");
-              setMode('save');
-              setOpen(true);
-            }
+            setNewName("");
+            setMode('save');
+            setUsingLocalStore(!user || !token);
+            setOpen(true);
           }}
           disabled={authLoading}
         >
@@ -317,12 +334,9 @@ export default function SavedConfigsPanel({
           type="button"
           className="mini-btn"
           onClick={() => {
-            if (!user) {
-              setAuthModalOpen(true);
-            } else {
-              setMode('view');
-              setOpen(true);
-            }
+            setMode('view');
+            setUsingLocalStore(!user || !token);
+            setOpen(true);
           }}
           disabled={authLoading}
         >
@@ -391,7 +405,7 @@ export default function SavedConfigsPanel({
             <div>
               <h2 id="saved-config-title">Saved configurations</h2>
               <p>
-                {pageLabel} · {user ? `for ${user.username}` : "Please login"}
+                {pageLabel} · {usingLocalStore ? "local browser configs" : user ? `for ${user.username}` : "local browser configs"}
               </p>
             </div>
             <button
@@ -404,7 +418,7 @@ export default function SavedConfigsPanel({
             </button>
           </div>
 
-          {!user ? (
+          {!user && !usingLocalStore ? (
             <div className="saved-config-alert error">
               You must be logged in to save or load configurations.{" "}
               <button

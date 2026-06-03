@@ -27,7 +27,7 @@ export default function TaxGainHarvestingModal({ onClose }) {
                 <strong>Calculate Unrealized Gain:</strong> Each year, we calculate the gain in your portfolio (Portfolio Value - Cost Basis).
               </li>
               <li>
-                <strong>Harvest Optimal Amount:</strong> We harvest gains up to the annual LTCG exemption limit (₹1,25,000) — never more.
+                <strong>Harvest Optimal Amount:</strong> We harvest gains up to the available annual LTCG exemption limit (₹1,25,000 per family member) — never more.
               </li>
               <li>
                 <strong>No Tax on Harvested Gains:</strong> Gains within the exemption limit are <strong>NOT taxed</strong>.
@@ -84,7 +84,7 @@ export default function TaxGainHarvestingModal({ onClose }) {
             <h3>Key Benefits</h3>
             <ul className="modal-list">
               <li>
-                <strong>Tax Savings:</strong> Annually harvest ₹1,25,000 in gains tax-free, compounding tax savings over time.
+                <strong>Tax Savings:</strong> Annually harvest eligible gains tax-free, with the available limit scaling by family members.
               </li>
               <li>
                 <strong>Higher Cost Basis:</strong> Increasing cost basis reduces final taxable gains at maturity.
@@ -105,7 +105,7 @@ export default function TaxGainHarvestingModal({ onClose }) {
             <h3>Important Notes</h3>
             <ul className="modal-list">
               <li>
-                <strong>Exemption Limit:</strong> Currently set to ₹1,25,000 per year (as per current Indian LTCG tax rules). This may change with tax law amendments.
+                <strong>Exemption Limit:</strong> Currently set to ₹1,25,000 per family member per year (as per current Indian LTCG tax rules). This may change with tax law amendments.
               </li>
               <li>
                 <strong>Annual Frequency:</strong> Harvesting happens automatically once per year. You cannot modify frequency or harvest amount.
@@ -125,15 +125,15 @@ export default function TaxGainHarvestingModal({ onClose }) {
           <section className="modal-section">
             <h3>Mode A: Optimal Harvesting</h3>
             <p>
-              This calculator uses <strong>Mode A: Optimal Harvesting</strong>, which automatically harvests the maximum allowed gains each year (up to ₹1,25,000). This is the most tax-efficient approach for most investors.
+              This calculator uses <strong>Mode A: Optimal Harvesting</strong>, which automatically harvests the maximum allowed gains each year based on the family-member count. This is the most tax-efficient approach for most investors.
             </p>
             <p>
-              You cannot modify:
+              You can modify the family-member count. The calculator keeps these settings automatic:
             </p>
             <ul className="modal-list">
-              <li>Harvest amount (fixed at min(unrealized gain, ₹1,25,000))</li>
+              <li>Harvest amount (fixed at min(unrealized gain, available family exemption))</li>
               <li>Harvest frequency (fixed at annual)</li>
-              <li>LTCG exemption limit (currently ₹1,25,000)</li>
+              <li>Base LTCG exemption per member (currently ₹1,25,000)</li>
             </ul>
             <p>
               This ensures optimal, automatic tax management without any guesswork.
@@ -197,7 +197,7 @@ export default function TaxGainHarvestingModal({ onClose }) {
                   </tr>
                 </tbody>
               </table>
-              <p className="table-note">*Assumes harvesting up to ₹1.25L annually over 10 years</p>
+              <p className="table-note">*Assumes harvesting up to the available annual family exemption over 10 years</p>
             </div>
           </section>
 

@@ -15,6 +15,7 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
     stepUpType,
     stepUpValue,
     harvestingEnabled,
+    familyMembers,
   } = params;
 
   const rAnn = ratePercentage / 100;
@@ -22,6 +23,7 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
   const tax = taxRate / 100;
   const er = expenseRatio / 100;
   const months = years * 12;
+  const annualHarvestingLimit = LTCG_EXEMPTION_LIMIT * Math.max(1, Math.floor(familyMembers || 1));
 
   let corpus = initialLumpsum;
   let sipInvested = 0;
@@ -54,7 +56,7 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
       let harvestedThisYear = 0;
       if (harvestingEnabled) {
         const unrealizedGain = Math.max(0, corpus - costBasis);
-        harvestedThisYear = Math.min(unrealizedGain, LTCG_EXEMPTION_LIMIT);
+        harvestedThisYear = Math.min(unrealizedGain, annualHarvestingLimit);
         if (harvestedThisYear > 0) {
           costBasis += harvestedThisYear;
           totalHarvestedGains += harvestedThisYear;
@@ -109,10 +111,10 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
     // With harvesting: taxable gain is reduced by harvested amounts
     const finalTaxableGain = Math.max(0, corpus - costBasis);
     taxableGain = finalTaxableGain;
-    taxAmount = Math.max(0, finalTaxableGain - LTCG_EXEMPTION_LIMIT) * tax;
+    taxAmount = Math.max(0, finalTaxableGain - annualHarvestingLimit) * tax;
     
     // Calculate tax that would have been paid without harvesting
-    const taxWithoutHarvesting = Math.max(0, gains - LTCG_EXEMPTION_LIMIT) * tax;
+    const taxWithoutHarvesting = Math.max(0, gains - annualHarvestingLimit) * tax;
     taxSavedByHarvesting = Math.max(0, taxWithoutHarvesting - taxAmount);
   } else {
     taxAmount = Math.max(0, gains - LTCG_EXEMPTION_LIMIT) * tax;
@@ -137,6 +139,8 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
     isProfit: profitLoss >= 0,
     yearlyData,
     harvestingEnabled,
+    familyMembers: Math.max(1, Math.floor(familyMembers || 1)),
+    annualHarvestingLimit,
     totalHarvestedGains,
     finalCostBasis: costBasis,
     finalTaxableGain: taxableGain,
@@ -188,6 +192,7 @@ export function calculate(inputs) {
     taxRate: parseNum(inputs.taxRate, 12.5),
     inflation: parseNum(inputs.inflation, 6),
     harvestingEnabled: inputs.harvestingEnabled === true || inputs.harvestingEnabled === 'true',
+    familyMembers: Math.max(1, Math.floor(parseNum(inputs.familyMembers, 1))),
   };
 
   let sim;
@@ -215,8 +220,8 @@ export function calculate(inputs) {
   const rows = sim.yearlyData.map((d) => [
     d.year,
     formatINR(Math.round(d.invested)),
+    formatINR(Math.round(d.investedInflAdj)),
     formatINR(Math.round(d.corpus)),
-    formatINR(Math.round(d.costBasis)),
     formatINR(Math.round(d.postTax)),
     formatINR(Math.round(d.inflationAdjustedPostTax)),
   ]);
@@ -230,13 +235,15 @@ export function calculate(inputs) {
         { label: 'Required Monthly SIP', value: formatINR(goalMeta.requiredMonthlySIP), tone: 'primary', sub: goalMeta.goalAlreadyMet ? 'Lumpsum alone meets goal' : `To reach ${formatINR(goalMeta.goalAmount)}` },
         { label: 'Target Goal', value: formatINR(Math.round(goalMeta.goalAmount)), tone: 'success' },
         { label: 'Projected Post-Tax', value: formatINR(Math.round(sim.postTaxValue)) },
-        { label: 'Total Invested', value: formatINR(Math.round(sim.invested)) },
+        { label: 'Nominal Invested', value: formatINR(Math.round(sim.invested)) },
+        { label: 'Inflation-Adjusted Invested', value: formatINR(Math.round(sim.investedInflAdj)), sub: "Today's purchasing power" },
       ]
     : [
         { label: 'Inflation-Adjusted (post-tax)', value: formatINR(Math.round(sim.inflationAdjusted)), tone: 'primary', sub: "Today's rupees" },
         { label: 'Real Profit/Loss', value: formatINR(Math.abs(sim.profitLoss)), tone: sim.isProfit ? 'success' : 'danger', sub: sim.isProfit ? 'Gain vs inflation-adj. cost' : 'Loss vs inflation-adj. cost' },
         { label: 'Post-Tax Nominal', value: formatINR(Math.round(sim.postTaxValue)), sub: 'At maturity' },
-        { label: 'Total Invested', value: formatINR(Math.round(sim.invested)) },
+        { label: 'Nominal Invested', value: formatINR(Math.round(sim.invested)) },
+        { label: 'Inflation-Adjusted Invested', value: formatINR(Math.round(sim.investedInflAdj)), sub: "Today's purchasing power" },
         { label: 'Tax on Gains', value: formatINR(Math.round(sim.taxAmount)), sub: 'After exemptions' },
         { label: 'Expense Ratio Cost', value: formatINR(Math.round(sim.expenseDrag)), sub: 'Fees eroded from corpus' },
       ];
@@ -246,7 +253,8 @@ export function calculate(inputs) {
     ? [
         ...summaryBase,
         { label: 'Tax Gain Harvesting Status', value: 'Enabled', tone: 'success', sub: 'Annual harvesting active' },
-        { label: 'Total Harvested Gains', value: formatINR(Math.round(sim.totalHarvestedGains)), tone: 'primary', sub: 'Up to ₹1.25L/year' },
+        { label: 'Family Members', value: String(sim.familyMembers), sub: `Harvesting limit ${formatINR(sim.annualHarvestingLimit)}/year` },
+        { label: 'Total Harvested Gains', value: formatINR(Math.round(sim.totalHarvestedGains)), tone: 'primary', sub: `Up to ${formatINR(sim.annualHarvestingLimit)}/year` },
         { label: 'Updated Cost Basis', value: formatINR(Math.round(sim.finalCostBasis)), sub: 'After harvesting' },
         { label: 'Estimated Tax Saved', value: formatINR(Math.round(sim.taxSavedByHarvesting)), tone: 'success', sub: 'vs. no harvesting' },
         { label: 'Final Taxable Gain', value: formatINR(Math.round(sim.finalTaxableGain)), sub: 'At withdrawal' },
@@ -259,7 +267,7 @@ export function calculate(inputs) {
     `Initial lumpsum ${formatINR(engineParams.initialLumpsum)} + SIP contributions over ${engineParams.years} years`,
     `Year-end: return ${formatPercent(engineParams.ratePercentage)} applied; expense ratio ${formatPercent(engineParams.expenseRatio)} deducted from total corpus`,
     engineParams.harvestingEnabled
-      ? `Tax Gain Harvesting: ${formatINR(Math.round(sim.totalHarvestedGains))} harvested across ${engineParams.years} years (up to ₹1.25L/year)`
+      ? `Tax Gain Harvesting: ${formatINR(Math.round(sim.totalHarvestedGains))} harvested across ${engineParams.years} years (up to ${formatINR(sim.annualHarvestingLimit)}/year for ${sim.familyMembers} family member${sim.familyMembers > 1 ? 's' : ''})`
       : 'Tax Gain Harvesting: Disabled',
     `Corpus at maturity = ${formatINR(Math.round(sim.corpus))}; gains = ${formatINR(Math.round(sim.gains))}`,
     engineParams.harvestingEnabled
@@ -280,7 +288,7 @@ export function calculate(inputs) {
     ? [
         { label: 'Post-Tax Value', data: sim.yearlyData.map((d) => Math.round(d.postTax)) },
         { label: 'Target Goal', data: sim.yearlyData.map(() => Math.round(goalMeta.goalAmount)) },
-        { label: 'Total Invested', data: sim.yearlyData.map((d) => Math.round(d.invested)) },
+        { label: 'Nominal Invested', data: sim.yearlyData.map((d) => Math.round(d.invested)) },
       ]
     : [
         { label: 'Inflation-Adjusted (post-tax)', data: sim.yearlyData.map((d) => Math.round(d.inflationAdjustedPostTax)) },
@@ -307,7 +315,7 @@ export function calculate(inputs) {
       'Monthly SIP added each month; return and expense ratio applied at year-end on total corpus',
       'Expense ratio deducted every year from lumpsum + SIP combined balance',
       sim.harvestingEnabled
-        ? `Tax Gain Harvesting: ${formatINR(Math.round(sim.totalHarvestedGains))} harvested over ${engineParams.years} years; estimated tax saved: ${formatINR(Math.round(sim.taxSavedByHarvesting))}`
+        ? `Tax Gain Harvesting: ${formatINR(Math.round(sim.totalHarvestedGains))} harvested over ${engineParams.years} years using ${sim.familyMembers} family member${sim.familyMembers > 1 ? 's' : ''}; annual limit ${formatINR(sim.annualHarvestingLimit)}; estimated tax saved: ${formatINR(Math.round(sim.taxSavedByHarvesting))}`
         : 'Tax applied once at maturity on profit (gains above ₹1.25L LTCG exemption)',
       'Inflation adjustment uses midpoint discount for SIP contributions',
       engineParams.mode === 'stepup' ? `Step-up: ${engineParams.stepUpType} by ${engineParams.stepUpValue}` : null,
@@ -332,12 +340,13 @@ export function calculate(inputs) {
     yearlyTable: {
       title: 'Year-by-Year Projection',
       columns: sim.harvestingEnabled
-        ? ['Year', 'Invested', 'Corpus', 'Cost Basis', 'Post-Tax', 'Inflation-Adj.']
-        : ['Year', 'Invested', 'Corpus', 'Post-Tax', 'Inflation-Adj.'],
+        ? ['Year', 'Nominal Invested', 'Inflation-Adj. Invested', 'Corpus', 'Cost Basis', 'Post-Tax', 'Inflation-Adj.']
+        : ['Year', 'Nominal Invested', 'Inflation-Adj. Invested', 'Corpus', 'Post-Tax', 'Inflation-Adj.'],
       rows: sim.harvestingEnabled
         ? sim.yearlyData.map((d) => [
             d.year,
             formatINR(Math.round(d.invested)),
+            formatINR(Math.round(d.investedInflAdj)),
             formatINR(Math.round(d.corpus)),
             formatINR(Math.round(d.costBasis)),
             formatINR(Math.round(d.postTax)),
@@ -351,7 +360,7 @@ export function calculate(inputs) {
           ? `Invest ${formatINR(goalMeta.requiredMonthlySIP)}/month to reach ${formatINR(goalMeta.goalAmount)} in ${engineParams.years} years.`
           : `Real value of portfolio: ${formatINR(Math.round(sim.inflationAdjusted))} in today's rupees.`,
         sim.harvestingEnabled
-          ? `Tax Gain Harvesting saved ${formatINR(Math.round(sim.taxSavedByHarvesting))} in taxes by harvesting ₹1.25L gains annually.`
+          ? `Tax Gain Harvesting saved ${formatINR(Math.round(sim.taxSavedByHarvesting))} in taxes by harvesting up to ${formatINR(sim.annualHarvestingLimit)} annually.`
           : 'Enable Tax Gain Harvesting to optimize tax liability and increase cost basis.',
         `Expense ratio eroded ${formatINR(Math.round(sim.expenseDrag))} from corpus over ${engineParams.years} years.`,
       ],
@@ -383,12 +392,13 @@ export function calculate(inputs) {
         {
           title: 'Yearly Projection',
           columns: sim.harvestingEnabled
-            ? ['Year', 'Invested', 'Corpus', 'Cost Basis', 'Post-Tax', 'Inflation-Adj.']
-            : ['Year', 'Invested', 'Corpus', 'Post-Tax', 'Inflation-Adj.'],
+            ? ['Year', 'Nominal Invested', 'Inflation-Adj. Invested', 'Corpus', 'Cost Basis', 'Post-Tax', 'Inflation-Adj.']
+            : ['Year', 'Nominal Invested', 'Inflation-Adj. Invested', 'Corpus', 'Post-Tax', 'Inflation-Adj.'],
           rows: sim.harvestingEnabled
             ? sim.yearlyData.map((d) => [
                 d.year,
                 formatINR(Math.round(d.invested)),
+                formatINR(Math.round(d.investedInflAdj)),
                 formatINR(Math.round(d.corpus)),
                 formatINR(Math.round(d.costBasis)),
                 formatINR(Math.round(d.postTax)),

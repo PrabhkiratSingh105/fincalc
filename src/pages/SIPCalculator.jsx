@@ -113,6 +113,15 @@ const FIELDS = [
     tooltip: 'Automatically harvest gains up to ₹1.25L annually to optimize tax liability.',
     hasInfoButton: true,
   },
+  {
+    key: 'familyMembers',
+    label: 'Family Members',
+    min: 1,
+    max: 10,
+    step: 1,
+    tooltip: 'Number of family members whose annual LTCG exemption can be used for harvesting.',
+    showWhen: (i) => i.harvestingEnabled === true || i.harvestingEnabled === 'true',
+  },
 ];
 
 const DEFAULTS = {
@@ -128,13 +137,14 @@ const DEFAULTS = {
   taxRate: 12.5,
   inflation: 6,
   harvestingEnabled: false,
+  familyMembers: 1,
 };
 
 const SECTIONS = [
   { title: 'Mode & Goal', fields: ['mode', 'goalAmount'] },
   { title: 'Investment', fields: ['initialLumpsum', 'monthlyAmount', 'years', 'ratePercentage'], divider: true },
   { title: 'Step-Up', fields: ['stepUpType', 'stepUpValue'] },
-  { title: 'Adjustments', fields: ['expenseRatio', 'taxRate', 'inflation', 'harvestingEnabled'] },
+  { title: 'Adjustments', fields: ['expenseRatio', 'taxRate', 'inflation', 'harvestingEnabled', 'familyMembers'] },
 ];
 
 export default function SIPCalculator() {

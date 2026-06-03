@@ -5,11 +5,17 @@ import { buildInsights } from '../utils/calculatorHelpers';
 export function calculate(inputs) {
   const monthlyDeposit = parseNum(inputs.monthlyDeposit, 5000);
   const rate = parseNum(inputs.rate, 7) / 100;
+  const inflation = parseNum(inputs.inflation, 6) / 100;
   const years = parseNum(inputs.years, 5);
   const months = years * 12;
 
   const maturity = rdMaturity(monthlyDeposit, rate, months);
   const totalDeposited = monthlyDeposit * months;
+  let inflationAdjustedDeposited = 0;
+  for (let mo = 1; mo <= months; mo++) {
+    inflationAdjustedDeposited += monthlyDeposit / Math.pow(1 + inflation, (months - mo + 1) / 12);
+  }
+  const inflationAdjustedMaturity = maturity / Math.pow(1 + inflation, years);
   const interest = maturity - totalDeposited;
   const effectiveYield = totalDeposited > 0 && years > 0
     ? (Math.pow(maturity / totalDeposited, 1 / years) - 1) * 100
@@ -24,12 +30,18 @@ export function calculate(inputs) {
     const mo = yr * 12;
     const corpus = fvSip(monthlyDeposit, rate, mo);
     const invested = monthlyDeposit * mo;
+    let inflAdjInvested = 0;
+    for (let m = 1; m <= mo; m++) {
+      inflAdjInvested += monthlyDeposit / Math.pow(1 + inflation, (mo - m + 1) / 12);
+    }
     const yrInterest = corpus - invested;
     rows.push([
       yr,
       formatINR(Math.round(invested)),
+      formatINR(Math.round(inflAdjInvested)),
       formatINR(Math.round(corpus)),
       formatINR(Math.round(yrInterest)),
+      formatINR(Math.round(corpus / Math.pow(1 + inflation, yr))),
     ]);
     labels.push(`Year ${yr}`);
     corpusSeries.push(Math.round(corpus));
@@ -41,7 +53,9 @@ export function calculate(inputs) {
   return {
     summary: [
       { label: 'Maturity Amount', value: formatINR(Math.round(maturity)), tone: 'success' },
-      { label: 'Total Deposited', value: formatINR(Math.round(totalDeposited)), tone: 'primary' },
+      { label: 'Nominal Deposited', value: formatINR(Math.round(totalDeposited)), tone: 'primary' },
+      { label: 'Inflation-Adjusted Deposited', value: formatINR(Math.round(inflationAdjustedDeposited)), sub: "Today's purchasing power" },
+      { label: 'Inflation-Adjusted Maturity', value: formatINR(Math.round(inflationAdjustedMaturity)), sub: "Today's rupees" },
       { label: 'Interest Earned', value: formatINR(Math.round(interest)) },
       { label: 'Effective Yield', value: formatPercent(effectiveYield), sub: 'On total deposits' },
       { label: 'Monthly Deposit', value: formatINR(Math.round(monthlyDeposit)) },
@@ -50,13 +64,14 @@ export function calculate(inputs) {
       `Monthly deposit = ${formatINR(monthlyDeposit)} for ${years} years (${months} months)`,
       `Rate = ${formatPercent(rate * 100)} p.a.; monthly rate = ${formatPercent(r * 100, 4)}`,
       `Maturity = PMT × [((1+r)^n − 1)/r] × (1+r) = ${formatINR(Math.round(maturity))}`,
-      `Total deposited = ${formatINR(Math.round(totalDeposited))}; Interest = ${formatINR(Math.round(interest))}`,
+      `Nominal deposited = ${formatINR(Math.round(totalDeposited))}; Inflation-adjusted deposited = ${formatINR(Math.round(inflationAdjustedDeposited))}; Interest = ${formatINR(Math.round(interest))}`,
     ],
     assumptions: [
       'Recurring deposit with monthly compounding (standard RD formula)',
       'Fixed rate throughout tenure',
       'Deposits made at start of each month',
       'Pre-tax; TDS applicable per bank rules',
+      `Inflation adjustment uses ${formatPercent(inflation * 100)} p.a.`,
     ],
     charts: [
       {
@@ -82,7 +97,7 @@ export function calculate(inputs) {
       },
     ],
     yearlyTable: {
-      columns: ['Year', 'Total Deposited', 'Value', 'Interest'],
+      columns: ['Year', 'Nominal Deposited', 'Inflation-Adj. Deposited', 'Value', 'Interest', 'Inflation-Adj. Value'],
       rows,
     },
     insights: buildInsights({
@@ -100,11 +115,12 @@ export function calculate(inputs) {
       title: 'Recurring Deposit Calculator',
       summary: [
         { label: 'Maturity', value: formatINR(Math.round(maturity)) },
-        { label: 'Total Deposited', value: formatINR(Math.round(totalDeposited)) },
+        { label: 'Nominal Deposited', value: formatINR(Math.round(totalDeposited)) },
+        { label: 'Inflation-Adjusted Deposited', value: formatINR(Math.round(inflationAdjustedDeposited)) },
         { label: 'Interest', value: formatINR(Math.round(interest)) },
       ],
-      tables: [{ title: 'Yearly Breakdown', columns: ['Year', 'Total Deposited', 'Value', 'Interest'], rows }],
+      tables: [{ title: 'Yearly Breakdown', columns: ['Year', 'Nominal Deposited', 'Inflation-Adj. Deposited', 'Value', 'Interest', 'Inflation-Adj. Value'], rows }],
     },
-    raw: { monthlyDeposit, maturity, totalDeposited, interest, effectiveYield, months },
+    raw: { monthlyDeposit, maturity, totalDeposited, inflationAdjustedDeposited, inflationAdjustedMaturity, interest, effectiveYield, months },
   };
 }

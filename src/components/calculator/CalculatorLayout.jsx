@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import SavedConfigsPanel from '../SavedConfigsPanel';
 import ChartPanel from './ChartPanel';
 import { useCalculatorPage } from '../../hooks/useCalculatorPage';
+import { formatIndianNumberInput, toNumber } from '../../utils/format';
 
 function getRangeFillStyle(field, value) {
   const min = Number(field.min ?? 0);
@@ -18,6 +19,11 @@ function getRangeFillStyle(field, value) {
 
 function InputField({ field, value, onChange, suffix, onInfoButtonClick }) {
   const [showTip, setShowTip] = useState(false);
+  const currencyLabelPattern = /(₹|amount|corpus|principal|lumpsum|sip|deposit|withdrawal|income|emi|savings|80c|hra|interest)/i;
+  const isCurrency =
+    field.currency ||
+    suffix === '₹' ||
+    (currencyLabelPattern.test(field.label || '') && !/%|rate|yield|ratio|period|years|timeline|tenure|age/i.test(field.label || ''));
 
   // Determine max value for range slider (especially for percentage fields)
   const getRangeMax = () => {
@@ -90,15 +96,23 @@ function InputField({ field, value, onChange, suffix, onInfoButtonClick }) {
           <div className={`calc-input-wrapper ${suffix ? 'has-suffix' : ''}`}>
             <input
               id={field.key}
-              type={field.type || 'number'}
+              type={isCurrency ? 'text' : field.type || 'number'}
+              inputMode={isCurrency ? 'decimal' : undefined}
               className="calc-input"
-              value={value}
+              value={isCurrency ? formatIndianNumberInput(value) : value}
               min={field.min}
               max={field.max}
               step={field.step ?? 1}
               onWheel={(e) => e.currentTarget.blur()}
               onChange={(e) =>
-                onChange(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)
+                onChange(
+                  field.key,
+                  isCurrency
+                    ? toNumber(e.target.value)
+                    : field.type === 'number'
+                      ? Number(e.target.value)
+                      : e.target.value
+                )
               }
             />
             {suffix && <span className="calc-input-suffix">{suffix}</span>}

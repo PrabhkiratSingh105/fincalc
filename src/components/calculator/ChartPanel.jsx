@@ -13,7 +13,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
-import { formatAxis } from '../../utils/format';
+import { formatAxis, formatINR } from '../../utils/format';
 import { useTheme } from '../../context/ThemeContext';
 
 ChartJS.register(
@@ -85,7 +85,7 @@ function buildOptions(theme) {
         padding: 12,
         cornerRadius: 9,
         callbacks: {
-          label: (c) => ` ${c.dataset.label}: Rs. ${Number(c.raw).toLocaleString('en-IN')}`,
+          label: (c) => ` ${c.dataset.label}: ${formatINR(c.raw)}`,
         },
       },
     },
@@ -124,7 +124,7 @@ function buildDoughnutOptions(theme) {
           label: (c) => {
             const total = c.dataset.data.reduce((a, b) => a + b, 0);
             const pct = total > 0 ? ((c.raw / total) * 100).toFixed(1) : 0;
-            return ` ${c.label}: Rs. ${Number(c.raw).toLocaleString('en-IN')} (${pct}%)`;
+            return ` ${c.label}: ${formatINR(c.raw)} (${pct}%)`;
           },
         },
       },

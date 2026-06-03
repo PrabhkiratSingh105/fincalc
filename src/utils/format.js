@@ -1,63 +1,69 @@
-function addIndianCommas(num) {
-  const isNegative = num < 0;
-  const numStr = Math.abs(num).toString();
-  const parts = numStr.split('.');
-  let integerPart = parts[0];
-  const decimalPart = parts[1];
-
-  // First reverse to apply commas from the right
-  const reversed = integerPart.split('').reverse().join('');
-  
-  // Apply Indian comma pattern: first 3 digits from right, then 2 after every 2 digits
-  let formattedReversed = '';
-  for (let i = 0; i < reversed.length; i++) {
-    if (i === 3 || (i > 3 && (i - 3) % 2 === 0)) {
-      formattedReversed += ',';
-    }
-    formattedReversed += reversed[i];
-  }
-  
-  // Reverse back to normal
-  const formatted = formattedReversed.split('').reverse().join('');
-  
-  let result = formatted;
-  if (decimalPart) {
-    result += '.' + decimalPart;
-  }
-  
-  return (isNegative ? '-' : '') + result;
+export function toNumber(value, fallback = 0) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : fallback;
+  const cleaned = String(value ?? '')
+    .replace(/[₹,\s]/g, '')
+    .replace(/[^\d.-]/g, '');
+  const num = Number(cleaned);
+  return Number.isFinite(num) ? num : fallback;
 }
 
-export function formatINR(value, { decimals = 0, compact = false } = {}) {
+export function addIndianCommas(value) {
+  const raw = String(value ?? '').replace(/,/g, '');
+  if (!raw) return '';
+
+  const isNegative = raw.startsWith('-');
+  const [integer = '0', decimal] = raw.replace(/^-/, '').split('.');
+  const formattedInteger =
+    integer.length > 3
+      ? `${integer.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',')},${integer.slice(-3)}`
+      : integer;
+
+  return `${isNegative ? '-' : ''}${formattedInteger}${decimal != null ? `.${decimal}` : ''}`;
+}
+
+function trimTrailingZeros(value) {
+  return String(value).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+}
+
+export function formatIndianNumberInput(value) {
+  const raw = String(value ?? '').replace(/[₹,\s]/g, '').replace(/[^\d.-]/g, '');
+  if (!raw || raw === '-' || raw === '.') return raw;
+
+  const [integer, decimal] = raw.split('.');
+  return addIndianCommas(`${integer}${decimal != null ? `.${decimal}` : ''}`);
+}
+
+export function formatINR(value, { decimals = 0, compact = 'auto' } = {}) {
   const num = Number(value);
   if (!Number.isFinite(num)) return '₹0';
 
-  if (compact) {
-    const abs = Math.abs(num);
-    if (abs >= 1e7) return `₹${addIndianCommas((num / 1e7).toFixed(2))} Cr`;
-    if (abs >= 1e5) return `₹${addIndianCommas((num / 1e5).toFixed(2))} L`;
-    if (abs >= 1e3) return `₹${addIndianCommas((num / 1e3).toFixed(1))} K`;
+  const abs = Math.abs(num);
+  const shouldCompact = compact === true || (compact === 'auto' && abs >= 100000);
+  if (shouldCompact) {
+    if (abs >= 1e7) return `₹${trimTrailingZeros((num / 1e7).toFixed(2))} Cr`;
+    if (abs >= 1e5) return `₹${trimTrailingZeros((num / 1e5).toFixed(2))} Lakh`;
   }
 
-  // For non-compact format, format with decimals first then add commas
-  const formattedNum = num.toFixed(decimals);
-  return `₹${addIndianCommas(parseFloat(formattedNum))}`;
+  return `₹${addIndianCommas(trimTrailingZeros(num.toFixed(decimals)))}`;
 }
 
 export function formatPercent(value, decimals = 2) {
   const num = Number(value);
   if (!Number.isFinite(num)) return '0%';
-  return `${num.toFixed(decimals)}%`;
+  return `${trimTrailingZeros(num.toFixed(decimals))}%`;
 }
 
 export function formatAxis(value) {
-  if (value >= 1e7) return `₹${(value / 1e7).toFixed(1)}Cr`;
-  if (value >= 1e5) return `₹${(value / 1e5).toFixed(0)}L`;
-  if (value >= 1e3) return `₹${(value / 1e3).toFixed(0)}K`;
-  return `₹${Math.round(value)}`;
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '₹0';
+
+  const abs = Math.abs(num);
+  if (abs >= 1e7) return `₹${trimTrailingZeros((num / 1e7).toFixed(1))} Cr`;
+  if (abs >= 1e5) return `₹${trimTrailingZeros((num / 1e5).toFixed(1))} L`;
+  if (abs >= 1e3) return `₹${trimTrailingZeros((num / 1e3).toFixed(0))}K`;
+  return `₹${Math.round(num)}`;
 }
 
 export function parseNum(value, fallback = 0) {
-  const num = Number(value);
-  return Number.isFinite(num) ? num : fallback;
+  return toNumber(value, fallback);
 }

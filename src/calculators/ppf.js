@@ -13,19 +13,22 @@ export function calculate(inputs) {
 
   let corpus = 0;
   let deposited = 0;
+  let inflationAdjustedDeposited = 0;
   const yearlyRaw = [];
   const rows = [];
 
   for (let mo = 1; mo <= months; mo++) {
     corpus = (corpus + monthlyAmount) * (1 + r);
     deposited += monthlyAmount;
+    inflationAdjustedDeposited += monthlyAmount / Math.pow(1 + inflation, (months - mo + 1) / 12);
     if (mo % 12 === 0) {
       const yr = mo / 12;
       const interest = corpus - deposited;
-      yearlyRaw.push({ year: yr, deposited, corpus, interest });
+      yearlyRaw.push({ year: yr, deposited, inflationAdjustedDeposited, corpus, interest });
       rows.push([
         yr,
         formatINR(Math.round(deposited)),
+        formatINR(Math.round(inflationAdjustedDeposited)),
         formatINR(Math.round(corpus)),
         formatINR(Math.round(interest)),
         formatINR(Math.round(corpus / Math.pow(1 + inflation, yr))),
@@ -40,7 +43,8 @@ export function calculate(inputs) {
   return {
     summary: [
       { label: 'Maturity Amount', value: formatINR(Math.round(corpus)), tone: 'success', sub: 'Tax-free (EEE)' },
-      { label: 'Total Deposited', value: formatINR(Math.round(deposited)), tone: 'primary' },
+      { label: 'Nominal Deposited', value: formatINR(Math.round(deposited)), tone: 'primary' },
+      { label: 'Inflation-Adjusted Deposited', value: formatINR(Math.round(inflationAdjustedDeposited)), sub: "Today's purchasing power" },
       { label: 'Interest Earned', value: formatINR(Math.round(interest)), sub: 'Fully exempt from tax' },
       { label: 'Inflation-Adjusted', value: formatINR(Math.round(inflationAdjusted)), sub: "Today's rupees" },
       { label: 'Monthly Deposit', value: formatINR(Math.round(monthlyAmount)) },
@@ -83,7 +87,7 @@ export function calculate(inputs) {
     ],
     yearlyTable: {
       title: '15-Year PPF Schedule',
-      columns: ['Year', 'Deposited', 'Balance', 'Interest', 'Inflation-Adj.'],
+      columns: ['Year', 'Nominal Deposited', 'Inflation-Adj. Deposited', 'Balance', 'Interest', 'Inflation-Adj.'],
       rows,
     },
     insights: buildInsights({
@@ -111,8 +115,8 @@ export function calculate(inputs) {
         { label: 'Deposited', value: formatINR(Math.round(deposited)) },
         { label: 'Interest', value: formatINR(Math.round(interest)) },
       ],
-      tables: [{ title: 'Yearly Schedule', columns: ['Year', 'Deposited', 'Balance', 'Interest', 'Inflation-Adj.'], rows }],
+      tables: [{ title: 'Yearly Schedule', columns: ['Year', 'Nominal Deposited', 'Inflation-Adj. Deposited', 'Balance', 'Interest', 'Inflation-Adj.'], rows }],
     },
-    raw: { monthlyAmount, corpus, deposited, interest, inflationAdjusted },
+    raw: { monthlyAmount, corpus, deposited, inflationAdjustedDeposited, interest, inflationAdjusted },
   };
 }
