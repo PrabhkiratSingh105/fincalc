@@ -1,3 +1,4 @@
+import { SpeedInsights } from "@vercel/speed-insights/next"
 const crypto = require('crypto');
 const fs = require('fs');
 const fsp = require('fs/promises');
