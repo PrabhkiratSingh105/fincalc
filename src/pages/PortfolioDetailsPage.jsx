@@ -13,7 +13,7 @@ import {
   createDefaultPortfolioItem,
 } from '../utils/portfolio';
 import { formatINR } from '../utils/format';
-
+import { API } from "../config";
 function ConfigSelect({ type, item, options, onChange }) {
   const pageKey = PORTFOLIO_TYPE_TO_PAGE[type];
 
@@ -69,7 +69,7 @@ export default function PortfolioDetailsPage() {
           }
 
           try {
-            const response = await fetch(`/api/configs/${pageKey}`, {
+            const response = await fetch(`${API}/api/configs/${pageKey}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             const data = await parseApiResponse(response, `Could not load ${pageKey} configs.`);

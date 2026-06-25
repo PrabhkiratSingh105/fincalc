@@ -8,6 +8,7 @@ import {
   saveConfig as saveLocalConfig,
   updateConfig as updateLocalConfig,
 } from "../utils/savedConfigs";
+import { API } from "../config";
 
 function formatDate(iso) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -56,7 +57,7 @@ export default function SavedConfigsPanel({
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/configs/${storageKey}`, {
+      const response = await fetch(`${API}/api/configs/${storageKey}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -109,7 +110,7 @@ export default function SavedConfigsPanel({
         return;
       }
 
-      const response = await fetch(`/api/configs/${storageKey}`, {
+      const response = await fetch(`${API}/api/configs/${storageKey}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -159,7 +160,7 @@ export default function SavedConfigsPanel({
         return;
       }
 
-      const response = await fetch(`/api/configs/${storageKey}/${entry.id}`, {
+      const response = await fetch(`${API}/api/configs/${storageKey}/${entry.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -205,7 +206,7 @@ export default function SavedConfigsPanel({
         return;
       }
 
-      const response = await fetch(`/api/configs/${storageKey}/${entry.id}`, {
+      const response = await fetch(`${API}/api/configs/${storageKey}/${entry.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -244,7 +245,7 @@ export default function SavedConfigsPanel({
         return;
       }
 
-      const response = await fetch(`/api/configs/${storageKey}/${entry.id}`, {
+      const response = await fetch(`${API}/api/configs/${storageKey}/${entry.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -284,7 +285,7 @@ export default function SavedConfigsPanel({
 
     try {
       setLoading(true);
-      const response = await fetch('/api/public-configs', {
+      const response = await fetch(`${API}/api/public-configs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

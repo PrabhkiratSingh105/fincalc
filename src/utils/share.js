@@ -1,3 +1,4 @@
+import { API } from "../config";
 export function encodeShareState(state) {
   try {
     const json = JSON.stringify(state);
@@ -39,7 +40,7 @@ async function parseApiResponse(response) {
 }
 
 export async function createPublicConfigLink({ page, title, config }) {
-  const response = await fetch('/api/public-configs', {
+  const response = await fetch(`${API}/api/public-configs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ page, title, config }),
@@ -49,7 +50,7 @@ export async function createPublicConfigLink({ page, title, config }) {
 
 export async function fetchPublicConfig(page, username, configName) {
   const response = await fetch(
-    `/api/public-configs/${encodeURIComponent(page)}/${encodeURIComponent(username)}/${encodeURIComponent(configName)}`
+    `${API}/api/public-configs/${encodeURIComponent(page)}/${encodeURIComponent(username)}/${encodeURIComponent(configName)}`
   );
   return parseApiResponse(response);
 }

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API } from "../config";
 import { parseApiResponse } from '../utils/api';
 
 const AuthContext = createContext();
@@ -14,7 +15,7 @@ export const AuthProvider = ({ children }) => {
     const verifyToken = async () => {
       if (token) {
         try {
-          const response = await fetch('/api/auth/me', {
+          const response = await fetch(`${API}/api/auth/me`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (response.ok) {
@@ -37,7 +38,7 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
   const login = async (username, password) => {
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch(`${API}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -50,7 +51,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signup = async (username, password) => {
-    const response = await fetch('/api/auth/signup', {
+    const response = await fetch(`${API}/api/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -65,7 +66,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     if (token) {
       try {
-        const response = await fetch('/api/auth/logout', {
+        const response = await fetch(`${API}/api/auth/logout`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` }
         });

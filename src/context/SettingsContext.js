@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { parseApiResponse } from '../utils/api';
+import { API } from "../config";
 
 const SETTINGS_STORAGE_KEY = 'fincalc:settings';
 const DEFAULT_SETTINGS = {
@@ -110,7 +111,7 @@ export function SettingsProvider({ children }) {
       }
 
       try {
-        const response = await fetch('/api/settings', {
+        const response = await fetch(`${API}/api/settings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await parseApiResponse(response, 'Could not load settings.');
@@ -152,7 +153,7 @@ export function SettingsProvider({ children }) {
 
       if (user && token) {
         try {
-          const response = await fetch('/api/settings', {
+          const response = await fetch(`${API}/api/settings`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',

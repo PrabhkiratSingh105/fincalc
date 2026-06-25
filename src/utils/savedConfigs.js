@@ -1,5 +1,6 @@
 const PREFIX = 'fincalc:configs:';
 
+
 function generateId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();

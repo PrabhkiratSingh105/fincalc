@@ -3,10 +3,12 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
 const express = require('express');
+const cors = require('cors');
 
 loadEnv();
 
 const app = express();
+app.use(cors());
 const PORT = process.env.PORT || 3000;
 const USERS_FILE = path.join(__dirname, 'users.json');
 const PUBLIC_CONFIGS_FILE = path.join(__dirname, 'public-configs.json');
