@@ -89,17 +89,39 @@ function createSession(user) {
 }
 
 function verifyPassword(password, user) {
+  if (!user?.salt || !user?.passwordHash) return false;
   const result = hashPassword(password, user.salt);
-  return crypto.timingSafeEqual(Buffer.from(result.hash, 'hex'), Buffer.from(user.passwordHash, 'hex'));
+  try {
+    return crypto.timingSafeEqual(Buffer.from(result.hash, 'hex'), Buffer.from(user.passwordHash, 'hex'));
+  } catch {
+    return false;
+  }
+}
+
+function stripByteOrderMark(value) {
+  return typeof value === 'string' ? value.replace(/^\uFEFF/, '') : value;
+}
+
+async function readJsonFile(filePath, fallbackFactory) {
+  try {
+    const raw = stripByteOrderMark(await fsp.readFile(filePath, 'utf8')).trim();
+    if (!raw) return fallbackFactory();
+    return JSON.parse(raw);
+  } catch (err) {
+    if (err.code === 'ENOENT') return fallbackFactory();
+    err.message = `Could not parse ${path.basename(filePath)}: ${err.message}`;
+    throw err;
+  }
+}
+
+function asyncHandler(handler) {
+  return (req, res, next) => {
+    Promise.resolve(handler(req, res, next)).catch(next);
+  };
 }
 
 async function readUsers() {
-  try {
-    return JSON.parse(await fsp.readFile(USERS_FILE, 'utf8'));
-  } catch (err) {
-    if (err.code === 'ENOENT') return [];
-    throw err;
-  }
+  return readJsonFile(USERS_FILE, () => []);
 }
 
 async function writeUsers(users) {
@@ -107,12 +129,7 @@ async function writeUsers(users) {
 }
 
 async function readPublicConfigs() {
-  try {
-    return JSON.parse(await fsp.readFile(PUBLIC_CONFIGS_FILE, 'utf8'));
-  } catch (err) {
-    if (err.code === 'ENOENT') return [];
-    throw err;
-  }
+  return readJsonFile(PUBLIC_CONFIGS_FILE, () => []);
 }
 
 async function writePublicConfigs(configs) {
@@ -155,6 +172,64 @@ function publicUser(user) {
   return { username: user.username };
 }
 
+function defaultUserSettings() {
+  return {
+    defaultInflationRate: 6,
+    customInflationRows: [
+      { id: 'essentials', percentage: 50, rate: 6 },
+      { id: 'lifestyle', percentage: 30, rate: 7 },
+      { id: 'healthcare', percentage: 20, rate: 8 },
+    ],
+    portfolios: [],
+  };
+}
+
+function normalizeSettings(input) {
+  const base = defaultUserSettings();
+  const safe = input && typeof input === 'object' ? input : {};
+  const migratedPortfolios =
+    Array.isArray(safe.portfolios) && safe.portfolios.length > 0
+      ? safe.portfolios
+      : safe.homePortfolio
+        ? [{
+            id: 'portfolio_legacy',
+            name: String(safe.homePortfolio?.portfolioName || 'Portfolio 1'),
+            inflationAdjusted: Boolean(safe.homePortfolio?.inflationAdjusted),
+            timelineYear: Math.min(100, Math.max(1, Number(safe.homePortfolio?.timelineYear ?? 1) || 1)),
+            updatedAt: new Date().toISOString(),
+            items: Array.isArray(safe.homePortfolio?.items) ? safe.homePortfolio.items : [],
+          }]
+        : base.portfolios;
+
+  return {
+    defaultInflationRate: Number(safe.defaultInflationRate ?? base.defaultInflationRate) || base.defaultInflationRate,
+    customInflationRows: Array.isArray(safe.customInflationRows) && safe.customInflationRows.length > 0
+      ? safe.customInflationRows.map((row, index) => ({
+          id: String(row?.id || `row_${index}`),
+          percentage: Number(row?.percentage ?? 0),
+          rate: Number(row?.rate ?? base.defaultInflationRate),
+        }))
+      : base.customInflationRows,
+    portfolios: migratedPortfolios.map((portfolio, portfolioIndex) => ({
+      id: String(portfolio?.id || `portfolio_${portfolioIndex}`),
+      name: String(portfolio?.name || `Portfolio ${portfolioIndex + 1}`),
+      inflationAdjusted: Boolean(portfolio?.inflationAdjusted),
+      timelineYear: Math.min(100, Math.max(1, Number(portfolio?.timelineYear ?? 1) || 1)),
+      updatedAt: portfolio?.updatedAt || new Date().toISOString(),
+      items: Array.isArray(portfolio?.items)
+        ? portfolio.items.map((item, index) => ({
+            id: String(item?.id || `item_${index}`),
+            type: String(item?.type || 'SIP'),
+            configId: String(item?.configId || ''),
+            configName: String(item?.configName || ''),
+            config: undefined,
+            resolvedConfig: item?.resolvedConfig && typeof item.resolvedConfig === 'object' ? item.resolvedConfig : null,
+          }))
+        : [],
+    })),
+  };
+}
+
 // API routes above, catch-all for React routing below
 
 app.post('/api/auth/signup', async (req, res) => {
@@ -172,7 +247,15 @@ app.post('/api/auth/signup', async (req, res) => {
 
     if (user) return res.status(409).json({ message: 'Username already exists. Please login.' });
     const { salt, hash } = hashPassword(password);
-    const newUser = { username, salt, passwordHash: hash, history: [], configs: {}, createdAt: new Date().toISOString() };
+    const newUser = {
+      username,
+      salt,
+      passwordHash: hash,
+      history: [],
+      configs: {},
+      settings: defaultUserSettings(),
+      createdAt: new Date().toISOString()
+    };
     const token = createSession(newUser);
     users.push(newUser);
     await writeUsers(users);
@@ -182,7 +265,7 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', asyncHandler(async (req, res) => {
   const username = normalizeUsername(req.body.username);
   const password = String(req.body.password || '');
 
@@ -199,24 +282,36 @@ app.post('/api/auth/login', async (req, res) => {
   const token = createSession(user);
   await writeUsers(users);
   res.json({ user: publicUser(user), token });
-});
+}));
 
 app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json({ user: publicUser(req.auth.user) });
 });
 
-app.post('/api/auth/logout', requireAuth, async (req, res) => {
+app.post('/api/auth/logout', requireAuth, asyncHandler(async (req, res) => {
   delete req.auth.user.sessionHash;
   delete req.auth.user.sessionCreatedAt;
   await writeUsers(req.auth.users);
   res.json({ ok: true });
-});
+}));
+
+app.get('/api/settings', requireAuth, asyncHandler(async (req, res) => {
+  req.auth.user.settings = normalizeSettings(req.auth.user.settings);
+  await writeUsers(req.auth.users);
+  res.json({ settings: req.auth.user.settings });
+}));
+
+app.put('/api/settings', requireAuth, asyncHandler(async (req, res) => {
+  req.auth.user.settings = normalizeSettings(req.body.settings);
+  await writeUsers(req.auth.users);
+  res.json({ settings: req.auth.user.settings });
+}));
 
 app.get('/api/history', requireAuth, (req, res) => {
   res.json({ history: req.auth.user.history || [] });
 });
 
-app.post('/api/history', requireAuth, async (req, res) => {
+app.post('/api/history', requireAuth, asyncHandler(async (req, res) => {
   const item = req.body || {};
   const calcType = String(item.calcType || '').trim();
   const title = String(item.title || '').trim();
@@ -242,13 +337,13 @@ app.post('/api/history', requireAuth, async (req, res) => {
   req.auth.user.history = [entry, ...(req.auth.user.history || [])].slice(0, MAX_HISTORY_ITEMS);
   await writeUsers(req.auth.users);
   res.status(201).json({ history: req.auth.user.history });
-});
+}));
 
-app.delete('/api/history/:id', requireAuth, async (req, res) => {
+app.delete('/api/history/:id', requireAuth, asyncHandler(async (req, res) => {
   req.auth.user.history = (req.auth.user.history || []).filter((item) => item.id !== req.params.id);
   await writeUsers(req.auth.users);
   res.json({ history: req.auth.user.history });
-});
+}));
 
 app.get('/api/configs/:page', requireAuth, (req, res) => {
   const page = String(req.params.page || '').trim();
@@ -432,6 +527,17 @@ app.get('/api/public-configs/:page/:username/:configName', async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message || 'Could not load public link.' });
   }
+});
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  if (res.headersSent) return next(err);
+
+  if (req.path.startsWith('/api')) {
+    return res.status(500).json({ message: err.message || 'Internal server error.' });
+  }
+
+  return res.status(500).send('Internal server error.');
 });
 
 // SPA fallback: React build, or standalone main.html when not built yet

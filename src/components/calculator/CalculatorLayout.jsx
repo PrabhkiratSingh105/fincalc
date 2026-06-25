@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import SavedConfigsPanel from '../SavedConfigsPanel';
 import ChartPanel from './ChartPanel';
 import { useCalculatorPage } from '../../hooks/useCalculatorPage';
 import { formatIndianNumberInput, toNumber } from '../../utils/format';
+import { useSettings } from '../../context/SettingsContext';
 
 function getRangeFillStyle(field, value) {
   const min = Number(field.min ?? 0);
@@ -191,15 +192,6 @@ function InsightsBlock({ insights }) {
             <p>{insights.inflation}</p>
           </div>
         )}
-        {insights.tax && (
-          <div className="calc-insight-card">
-            <div className="calc-insight-head">
-              <span className="material-symbols-rounded">receipt_long</span>
-              Tax Impact
-            </div>
-            <p>{insights.tax}</p>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -215,15 +207,57 @@ export default function CalculatorLayout({
   inputSections,
   onInfoButtonClick,
 }) {
+  const { settings } = useSettings();
+  const [mobileScreen, setMobileScreen] = useState('input');
+  const [openSections, setOpenSections] = useState({});
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 640);
+  const [resultInflationMode, setResultInflationMode] = useState('off');
+  const hasInflationField = fields.some((field) => field.key === 'inflation');
+
+  const resolvedDefaults = useMemo(() => {
+    const next = { ...defaults };
+    if (Object.prototype.hasOwnProperty.call(next, 'inflation')) {
+      next.inflation = settings.defaultInflationRate;
+    }
+    return next;
+  }, [defaults, settings.defaultInflationRate]);
+
   const {
     inputs,
     setField,
     setInputs,
     results,
-  } = useCalculatorPage(id, defaults, calculate);
+  } = useCalculatorPage(
+    id,
+    resolvedDefaults,
+    useMemo(
+      () => (rawInputs) => {
+        const adjustedInputs = hasInflationField
+          ? {
+              ...rawInputs,
+              inflation: resultInflationMode === 'on' ? settings.defaultInflationRate : 0,
+            }
+          : rawInputs;
+        return calculate(adjustedInputs);
+      },
+      [calculate, hasInflationField, resultInflationMode, settings.defaultInflationRate]
+    )
+  );
+
+  React.useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 640);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isMobile) {
+      setMobileScreen('input');
+    }
+  }, [isMobile]);
 
   const getConfig = () => inputs;
-  const applyConfig = (config) => setInputs({ ...defaults, ...config });
+  const applyConfig = (config) => setInputs({ ...resolvedDefaults, ...config });
 
   const isVisible = (field) => !field.showWhen || field.showWhen(inputs);
 
@@ -240,6 +274,168 @@ export default function CalculatorLayout({
         <InputField key={key} field={field} value={inputs[field.key]} onChange={setField} suffix={getSuffix(field)} onInfoButtonClick={onInfoButtonClick} />
       );
     });
+
+  const renderInputSections = () =>
+    inputSections
+      ? inputSections
+          .filter((section) =>
+            section.fields.some((key) => {
+              const field = fields.find((f) => f.key === key);
+              return field && isVisible(field);
+            })
+          )
+          .map((section) => {
+            const collapsible = Boolean(section.collapsible);
+            const open = openSections[section.title] ?? !section.defaultCollapsed;
+
+            return (
+              <div className="calc-input-section" key={section.title}>
+                <div className="calc-section-header">
+                  <div className="slbl">{section.title}</div>
+                  {collapsible && (
+                    <button
+                      type="button"
+                      className="calc-advanced-toggle"
+                      onClick={() =>
+                        setOpenSections((prev) => ({
+                          ...prev,
+                          [section.title]: !open,
+                        }))
+                      }
+                    >
+                      Advanced
+                      <span className="material-symbols-rounded">{open ? 'expand_less' : 'expand_more'}</span>
+                    </button>
+                  )}
+                </div>
+                {(!collapsible || open) && <div className="calc-input-section-grid">{renderFields(section.fields)}</div>}
+                {section.divider && <div className="div" />}
+              </div>
+            );
+          })
+      : fields.filter(isVisible).map((field) => (
+          <InputField
+            key={field.key}
+            field={field}
+            value={inputs[field.key]}
+            onChange={setField}
+            suffix={getSuffix(field)}
+            onInfoButtonClick={onInfoButtonClick}
+          />
+        ));
+
+  const renderResults = () =>
+    results && (
+      <>
+        <div className="card calc-summary-card">
+          <div className="calc-summary-head-row">
+            <div className="slbl">Results Summary</div>
+            {hasInflationField && (
+              <div className="portfolio-toggle-group calc-result-toggle-group">
+                <button
+                  type="button"
+                  className={`portfolio-toggle ${resultInflationMode === 'off' ? 'active' : ''}`}
+                  onClick={() => setResultInflationMode('off')}
+                >
+                  Non-Inflation Adjusted
+                </button>
+                <button
+                  type="button"
+                  className={`portfolio-toggle ${resultInflationMode === 'on' ? 'active' : ''}`}
+                  onClick={() => setResultInflationMode('on')}
+                >
+                  Inflation Adjusted
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="calc-summary-grid">
+            {results.summary.map((item, i) => (
+              <div
+                className={`calc-summary-item ${i === 0 ? 'is-featured' : ''} tone-${item.tone || 'default'}`}
+                key={i}
+              >
+                <div className="calc-summary-main">
+                  <div className="calc-summary-label">{item.label}</div>
+                  <div className="calc-summary-value">{item.value}</div>
+                </div>
+                {item.sub && <div className="calc-summary-sub">{item.sub}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {results.charts?.length > 0 && (
+          <div className="calc-charts-grid">
+            {results.charts.map((chart, i) => (
+              <div className="card" key={i}>
+                <ChartPanel chart={chart} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!isMobile &&
+          [results.yearlyTable, results.depletionTable, ...(results.yearlyTables || [])]
+            .filter(Boolean)
+            .map((table, ti) => (
+              <div className="card calc-table-card" key={ti}>
+                <div className="slbl">{table.title || 'Year-by-Year Breakdown'}</div>
+                <div className="calc-table-wrap">
+                  <table className="calc-table">
+                    <thead>
+                      <tr>
+                        {table.columns.map((col) => (
+                          <th key={col}>{col}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {table.rows.map((row, ri) => (
+                        <tr key={ri}>
+                          {row.map((cell, ci) => (
+                            <td key={ci}>{cell}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+
+        {!isMobile && (
+          <>
+            <div className="calc-detail-grid">
+              {results.steps?.length > 0 && (
+                <div className="card calc-detail-card">
+                  <div className="slbl">Step-by-Step Calculation</div>
+                  <ol className="calc-steps">
+                    {results.steps.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+              {results.assumptions?.length > 0 && (
+                <div className="card calc-detail-card">
+                  <div className="slbl">Assumptions</div>
+                  <ul className="calc-assumptions">
+                    {results.assumptions.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className="card">
+              <InsightsBlock insights={results.insights} />
+            </div>
+          </>
+        )}
+      </>
+    );
 
   return (
     <div className="page calc-page">
@@ -258,120 +454,28 @@ export default function CalculatorLayout({
       </div>
 
       <div className="calc-body">
-        <aside className="card calc-inputs-panel">
-          {inputSections
-            ? inputSections
-                .filter((section) =>
-                  section.fields.some((key) => {
-                    const field = fields.find((f) => f.key === key);
-                    return field && isVisible(field);
-                  })
-                )
-                .map((section) => (
-                <div className="calc-input-section" key={section.title}>
-                  <div className="slbl">{section.title}</div>
-                  <div className="calc-input-section-grid">{renderFields(section.fields)}</div>
-                  {section.divider && <div className="div" />}
-                </div>
-              ))
-            : fields.filter(isVisible).map((field) => (
-                <InputField
-                  key={field.key}
-                  field={field}
-                  value={inputs[field.key]}
-                  onChange={setField}
-                  suffix={getSuffix(field)}
-                  onInfoButtonClick={onInfoButtonClick}
-                />
-              ))}
-        </aside>
+        {(!isMobile || mobileScreen === 'input') && (
+          <aside className="card calc-inputs-panel">
+            {renderInputSections()}
+            {isMobile && (
+              <button type="button" className="mini-btn primary calc-mobile-cta" onClick={() => setMobileScreen('output')}>
+                Calculate
+              </button>
+            )}
+          </aside>
+        )}
 
-        <main className="calc-results-panel">
-          {results && (
-            <>
-              <div className="card calc-summary-card">
-                <div className="slbl">Results Summary</div>
-                <div className="calc-summary-grid">
-                  {results.summary.map((item, i) => (
-                    <div
-                      className={`calc-summary-item ${i === 0 ? 'is-featured' : ''} tone-${item.tone || 'default'}`}
-                      key={i}
-                    >
-                      <div className="calc-summary-label">{item.label}</div>
-                      <div className="calc-summary-value">{item.value}</div>
-                      {item.sub && <div className="calc-summary-sub">{item.sub}</div>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {results.charts?.length > 0 && (
-                <div className="calc-charts-grid">
-                  {results.charts.map((chart, i) => (
-                    <div className="card" key={i}>
-                      <ChartPanel chart={chart} />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {[results.yearlyTable, results.depletionTable, ...(results.yearlyTables || [])]
-                .filter(Boolean)
-                .map((table, ti) => (
-                <div className="card calc-table-card" key={ti}>
-                  <div className="slbl">{table.title || 'Year-by-Year Breakdown'}</div>
-                  <div className="calc-table-wrap">
-                    <table className="calc-table">
-                      <thead>
-                        <tr>
-                          {table.columns.map((col) => (
-                            <th key={col}>{col}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {table.rows.map((row, ri) => (
-                          <tr key={ri}>
-                            {row.map((cell, ci) => (
-                              <td key={ci}>{cell}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
-
-              <div className="calc-detail-grid">
-                {results.steps?.length > 0 && (
-                  <div className="card calc-detail-card">
-                    <div className="slbl">Step-by-Step Calculation</div>
-                    <ol className="calc-steps">
-                      {results.steps.map((step, i) => (
-                        <li key={i}>{step}</li>
-                      ))}
-                    </ol>
-                  </div>
-                )}
-                {results.assumptions?.length > 0 && (
-                  <div className="card calc-detail-card">
-                    <div className="slbl">Assumptions</div>
-                    <ul className="calc-assumptions">
-                      {results.assumptions.map((item, i) => (
-                        <li key={i}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              <div className="card">
-                <InsightsBlock insights={results.insights} />
-              </div>
-            </>
-          )}
-        </main>
+        {(!isMobile || mobileScreen === 'output') && (
+          <main className="calc-results-panel">
+            {isMobile && (
+              <button type="button" className="calc-mobile-back" onClick={() => setMobileScreen('input')}>
+                <span className="material-symbols-rounded">arrow_back</span>
+                Back
+              </button>
+            )}
+            {renderResults()}
+          </main>
+        )}
       </div>
     </div>
   );

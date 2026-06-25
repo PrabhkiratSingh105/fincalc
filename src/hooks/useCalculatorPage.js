@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   fetchPublicConfig,
@@ -8,6 +8,27 @@ import { downloadPdfReport } from '../utils/pdfExport';
 export function useCalculatorPage(calcId, defaults, calculateFn) {
   const { username, configName } = useParams();
   const [inputs, setInputs] = useState(defaults);
+  const previousDefaultsRef = useRef(defaults);
+
+  useEffect(() => {
+    setInputs((prev) => {
+      const previousDefaults = previousDefaultsRef.current || {};
+      const next = { ...prev };
+      let changed = false;
+
+      Object.entries(defaults || {}).forEach(([key, value]) => {
+        if (!(key in prev) || prev[key] === previousDefaults[key]) {
+          if (next[key] !== value) {
+            next[key] = value;
+            changed = true;
+          }
+        }
+      });
+
+      previousDefaultsRef.current = defaults;
+      return changed ? next : prev;
+    });
+  }, [defaults]);
 
   useEffect(() => {
     if (!username || !configName) return;

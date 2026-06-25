@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import CalculatorLayout from '../components/calculator/CalculatorLayout';
 import { calculateSip } from '../calculators';
-import TaxGainHarvestingModal from '../components/calculator/TaxGainHarvestingModal';
 
 const FIELDS = [
   {
@@ -9,7 +8,7 @@ const FIELDS = [
     label: 'SIP Mode',
     type: 'select',
     showRange: false,
-    tooltip: 'Simple SIP, step-up SIP, or goal-based (calculates required SIP).',
+    tooltip: 'Simple SIP, step-up SIP, or goal-based SIP.',
     options: [
       { value: 'simple', label: 'Simple SIP' },
       { value: 'stepup', label: 'Step-Up SIP' },
@@ -18,29 +17,29 @@ const FIELDS = [
   },
   {
     key: 'goalAmount',
-    label: 'Target Goal (₹)',
+    label: 'Target Goal (Rs)',
     min: 100000,
     max: 100000000,
     step: 100000,
     tooltip: 'Post-tax corpus target at maturity.',
-    showWhen: (i) => i.mode === 'goal',
+    showWhen: (input) => input.mode === 'goal',
   },
   {
     key: 'initialLumpsum',
-    label: 'Initial Lumpsum (₹)',
+    label: 'Initial Lumpsum (Rs)',
     min: 0,
     max: 50000000,
     step: 50000,
-    tooltip: 'One-time investment at start; earns compound return (expense ratio applied yearly on total corpus).',
+    tooltip: 'One-time investment at the start of the plan.',
   },
   {
     key: 'monthlyAmount',
-    label: 'Monthly SIP (₹)',
+    label: 'Monthly SIP (Rs)',
     min: 500,
     max: 200000,
     step: 500,
     tooltip: 'Monthly systematic investment amount.',
-    showWhen: (i) => i.mode !== 'goal',
+    showWhen: (input) => input.mode !== 'goal',
   },
   {
     key: 'years',
@@ -55,15 +54,7 @@ const FIELDS = [
     min: 1,
     max: 30,
     step: 0.5,
-    tooltip: 'Applied once per year on total corpus.',
-  },
-  {
-    key: 'expenseRatio',
-    label: 'Expense Ratio (% p.a.)',
-    min: 0,
-    max: 5,
-    step: 0.01,
-    tooltip: 'Deducted every year from total corpus (lumpsum + SIP).',
+    tooltip: 'Applied once per year on the total corpus.',
   },
   {
     key: 'stepUpType',
@@ -71,10 +62,10 @@ const FIELDS = [
     type: 'select',
     showRange: false,
     tooltip: 'How SIP increases each year in step-up mode.',
-    showWhen: (i) => i.mode === 'stepup',
+    showWhen: (input) => input.mode === 'stepup',
     options: [
       { value: 'pct', label: '% Annual Increase' },
-      { value: 'fixed', label: 'Fixed ₹ Increase' },
+      { value: 'fixed', label: 'Fixed Rs Increase' },
       { value: 'infl', label: 'Inflation-Linked' },
     ],
   },
@@ -83,11 +74,11 @@ const FIELDS = [
     label: 'Step-Up Value',
     min: 0,
     max: 100000,
-    rangeMax: 100, // Slider max for percentage mode
+    rangeMax: 100,
     step: 1,
-    tooltip: 'Annual step-up: percentage (0-100%) if type is "% Annual Increase", or rupees if "Fixed ₹ Increase".',
-    suffix: (i) => i.stepUpType === 'pct' ? '%' : '₹',
-    showWhen: (i) => i.mode === 'stepup' && i.stepUpType !== 'infl',
+    tooltip: 'Percentage or rupee increase depending on the selected step-up mode.',
+    suffix: (input) => (input.stepUpType === 'pct' ? '%' : 'Rs'),
+    showWhen: (input) => input.mode === 'stepup' && input.stepUpType !== 'infl',
   },
   {
     key: 'taxRate',
@@ -95,7 +86,7 @@ const FIELDS = [
     min: 0,
     max: 30,
     step: 0.5,
-    tooltip: 'LTCG at maturity; ₹1.25 lakh exemption on gains.',
+    tooltip: 'LTCG at maturity with the standard exemption applied.',
   },
   {
     key: 'inflation',
@@ -103,24 +94,16 @@ const FIELDS = [
     min: 0,
     max: 15,
     step: 0.5,
-    tooltip: 'For inflation-adjusted results and inflation-linked step-up.',
-    showWhen: (i) => i.mode !== 'goal',
+    tooltip: 'Used for inflation-adjusted results and inflation-linked step-up.',
+    showWhen: (input) => input.mode !== 'goal',
   },
   {
-    key: 'harvestingEnabled',
-    label: 'Tax Gain Harvesting',
-    type: 'toggle',
-    tooltip: 'Automatically harvest gains up to ₹1.25L annually to optimize tax liability.',
-    hasInfoButton: true,
-  },
-  {
-    key: 'familyMembers',
-    label: 'Family Members',
-    min: 1,
-    max: 10,
-    step: 1,
-    tooltip: 'Number of family members whose annual LTCG exemption can be used for harvesting.',
-    showWhen: (i) => i.harvestingEnabled === true || i.harvestingEnabled === 'true',
+    key: 'expenseRatio',
+    label: 'Expense Ratio (% p.a.)',
+    min: 0,
+    max: 5,
+    step: 0.01,
+    tooltip: 'Deducted every year from the total corpus.',
   },
 ];
 
@@ -136,37 +119,25 @@ const DEFAULTS = {
   stepUpValue: 10,
   taxRate: 12.5,
   inflation: 6,
-  harvestingEnabled: false,
-  familyMembers: 1,
 };
 
 const SECTIONS = [
   { title: 'Mode & Goal', fields: ['mode', 'goalAmount'] },
   { title: 'Investment', fields: ['initialLumpsum', 'monthlyAmount', 'years', 'ratePercentage'], divider: true },
   { title: 'Step-Up', fields: ['stepUpType', 'stepUpValue'] },
-  { title: 'Adjustments', fields: ['expenseRatio', 'taxRate', 'inflation', 'harvestingEnabled', 'familyMembers'] },
+  { title: 'Advanced', fields: ['expenseRatio', 'taxRate', 'inflation'], collapsible: true, defaultCollapsed: true },
 ];
 
 export default function SIPCalculator() {
-  const [showHarvestingModal, setShowHarvestingModal] = useState(false);
-
   return (
-    <>
-      <CalculatorLayout
-        id="sip"
-        title="SIP Calculator"
-        description="Advanced SIP calculator with step-up, goal-based planning, expense ratio, LTCG tax and inflation-adjusted returns — with full breakdown."
-        fields={FIELDS}
-        defaults={DEFAULTS}
-        calculate={calculateSip}
-        inputSections={SECTIONS}
-        onInfoButtonClick={(fieldKey) => {
-          if (fieldKey === 'harvestingEnabled') {
-            setShowHarvestingModal(true);
-          }
-        }}
-      />
-      {showHarvestingModal && <TaxGainHarvestingModal onClose={() => setShowHarvestingModal(false)} />}
-    </>
+    <CalculatorLayout
+      id="sip"
+      title="SIP Calculator"
+      description="Advanced SIP calculator with step-up, goal planning, expense ratio controls, and inflation-adjusted output."
+      fields={FIELDS}
+      defaults={DEFAULTS}
+      calculate={calculateSip}
+      inputSections={SECTIONS}
+    />
   );
 }

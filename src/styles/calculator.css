@@ -177,6 +177,20 @@
   border-color: var(--indigo-border);
 }
 
+.calc-summary-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.calc-result-toggle-group {
+  transform: scale(0.95);
+  transform-origin: right center;
+}
+
 .calc-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -192,12 +206,16 @@
   animation: calcFadeIn 0.4s ease both;
 }
 
+.calc-summary-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
 .calc-summary-item.is-featured {
   grid-column: 1 / -1;
   min-height: 118px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
   padding: 18px;
   background: linear-gradient(135deg, var(--surface) 0%, var(--green-lt) 100%);
   border-color: var(--green-border);
@@ -225,6 +243,7 @@
   letter-spacing: 0;
   line-height: 1.2;
   overflow-wrap: anywhere;
+  text-align: right;
 }
 
 .calc-summary-item.is-featured .calc-summary-value {
@@ -234,8 +253,47 @@
 .calc-summary-sub {
   font-size: 11px;
   color: var(--muted2);
-  margin-top: 4px;
+  margin-top: 8px;
   line-height: 1.4;
+}
+
+.calc-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.calc-advanced-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 6px 10px;
+  font: 600 12px var(--font-body);
+  cursor: pointer;
+}
+
+.calc-mobile-cta {
+  width: 100%;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.calc-mobile-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--indigo);
+  font: 700 13px var(--font-body);
+  cursor: pointer;
+  padding: 0 0 6px;
 }
 
 .calc-charts-grid {
@@ -851,6 +909,15 @@
 
   .calc-summary-item.is-featured .calc-summary-value {
     font-size: 24px;
+  }
+
+  .calc-summary-main {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .calc-summary-value {
+    text-align: left;
   }
 
   .calc-charts-grid {

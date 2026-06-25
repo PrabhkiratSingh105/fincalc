@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { parseApiResponse } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -17,7 +18,7 @@ export const AuthProvider = ({ children }) => {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (response.ok) {
-            const data = await response.json();
+            const data = await parseApiResponse(response, 'Could not verify session.');
             setUser(data.user);
           } else {
             setToken(null);
@@ -42,12 +43,7 @@ export const AuthProvider = ({ children }) => {
       body: JSON.stringify({ username, password })
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message);
-    }
-
-    const data = await response.json();
+    const data = await parseApiResponse(response, 'Unable to sign in right now.');
     setToken(data.token);
     setUser(data.user);
     localStorage.setItem('auth_token', data.token);
@@ -60,18 +56,25 @@ export const AuthProvider = ({ children }) => {
       body: JSON.stringify({ username, password })
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message);
-    }
-
-    const data = await response.json();
+    const data = await parseApiResponse(response, 'Unable to create account right now.');
     setToken(data.token);
     setUser(data.user);
     localStorage.setItem('auth_token', data.token);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (token) {
+      try {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        await parseApiResponse(response, 'Signed out locally.');
+      } catch (error) {
+        console.error('Logout API call failed:', error);
+      }
+    }
+
     setUser(null);
     setToken(null);
     localStorage.removeItem('auth_token');

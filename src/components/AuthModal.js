@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 export default function AuthModal({ isOpen, onClose }) {
@@ -9,6 +9,21 @@ export default function AuthModal({ isOpen, onClose }) {
   const [confirm, setConfirm] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const resetForm = () => {
+    setMode('login');
+    setUsername('');
+    setPassword('');
+    setConfirm('');
+    setMessage('');
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,8 +36,6 @@ export default function AuthModal({ isOpen, onClose }) {
         setMessage('Login successful!');
         setTimeout(() => {
           onClose();
-          setUsername('');
-          setPassword('');
         }, 500);
       } else {
         if (password !== confirm) {
@@ -32,9 +45,6 @@ export default function AuthModal({ isOpen, onClose }) {
         setMessage('Account created successfully!');
         setTimeout(() => {
           onClose();
-          setUsername('');
-          setPassword('');
-          setConfirm('');
         }, 500);
       }
     } catch (error) {

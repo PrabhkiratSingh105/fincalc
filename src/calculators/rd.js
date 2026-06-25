@@ -1,54 +1,84 @@
-import { rdMaturity, fvSip, periodicRate } from '../utils/finance';
+import { periodicRate } from '../utils/finance';
 import { formatINR, formatPercent, parseNum } from '../utils/format';
 import { buildInsights } from '../utils/calculatorHelpers';
+
+const FREQUENCY_MAP = {
+  monthly: 12,
+  quarterly: 4,
+  yearly: 1,
+};
+
+function calculateRecurringValue(payment, annualRate, years, paymentsPerYear, compoundingPerYear) {
+  const periods = Math.round(years * paymentsPerYear);
+  if (periods <= 0) return 0;
+
+  const effectiveAnnualRate = Math.pow(1 + annualRate / compoundingPerYear, compoundingPerYear) - 1;
+  const periodic = Math.pow(1 + effectiveAnnualRate, 1 / paymentsPerYear) - 1;
+
+  if (periodic === 0) return payment * periods;
+  return payment * ((Math.pow(1 + periodic, periods) - 1) / periodic) * (1 + periodic);
+}
+
+function frequencyLabel(value) {
+  if (value === 'quarterly') return 'quarter';
+  if (value === 'yearly') return 'year';
+  return 'month';
+}
 
 export function calculate(inputs) {
   const monthlyDeposit = parseNum(inputs.monthlyDeposit, 5000);
   const rate = parseNum(inputs.rate, 7) / 100;
   const inflation = parseNum(inputs.inflation, 6) / 100;
   const years = parseNum(inputs.years, 5);
-  const months = years * 12;
+  const depositFrequency = inputs.depositFrequency || 'monthly';
+  const compoundingFrequency = inputs.compoundingFrequency || 'monthly';
+  const paymentsPerYear = FREQUENCY_MAP[depositFrequency] || 12;
+  const compoundingPerYear = FREQUENCY_MAP[compoundingFrequency] || 12;
+  const paymentAmount =
+    depositFrequency === 'yearly' ? monthlyDeposit * 12 : depositFrequency === 'quarterly' ? monthlyDeposit * 3 : monthlyDeposit;
+  const totalPeriods = years * paymentsPerYear;
 
-  const maturity = rdMaturity(monthlyDeposit, rate, months);
-  const totalDeposited = monthlyDeposit * months;
-  let inflationAdjustedDeposited = 0;
-  for (let mo = 1; mo <= months; mo++) {
-    inflationAdjustedDeposited += monthlyDeposit / Math.pow(1 + inflation, (months - mo + 1) / 12);
-  }
+  const maturity = calculateRecurringValue(paymentAmount, rate, years, paymentsPerYear, compoundingPerYear);
+  const totalDeposited = paymentAmount * totalPeriods;
   const inflationAdjustedMaturity = maturity / Math.pow(1 + inflation, years);
   const interest = maturity - totalDeposited;
-  const effectiveYield = totalDeposited > 0 && years > 0
-    ? (Math.pow(maturity / totalDeposited, 1 / years) - 1) * 100
-    : 0;
+  const effectiveYield = totalDeposited > 0 && years > 0 ? (Math.pow(maturity / totalDeposited, 1 / years) - 1) * 100 : 0;
+
+  let inflationAdjustedDeposited = 0;
+  for (let period = 1; period <= totalPeriods; period += 1) {
+    inflationAdjustedDeposited += paymentAmount / Math.pow(1 + inflation, (totalPeriods - period + 1) / paymentsPerYear);
+  }
 
   const rows = [];
   const corpusSeries = [];
   const investedSeries = [];
   const labels = [];
 
-  for (let yr = 1; yr <= years; yr++) {
-    const mo = yr * 12;
-    const corpus = fvSip(monthlyDeposit, rate, mo);
-    const invested = monthlyDeposit * mo;
+  for (let year = 1; year <= years; year += 1) {
+    const elapsedPeriods = year * paymentsPerYear;
+    const corpus = calculateRecurringValue(paymentAmount, rate, year, paymentsPerYear, compoundingPerYear);
+    const invested = paymentAmount * elapsedPeriods;
     let inflAdjInvested = 0;
-    for (let m = 1; m <= mo; m++) {
-      inflAdjInvested += monthlyDeposit / Math.pow(1 + inflation, (mo - m + 1) / 12);
+
+    for (let period = 1; period <= elapsedPeriods; period += 1) {
+      inflAdjInvested += paymentAmount / Math.pow(1 + inflation, (elapsedPeriods - period + 1) / paymentsPerYear);
     }
-    const yrInterest = corpus - invested;
+
     rows.push([
-      yr,
+      year,
       formatINR(Math.round(invested)),
       formatINR(Math.round(inflAdjInvested)),
       formatINR(Math.round(corpus)),
-      formatINR(Math.round(yrInterest)),
-      formatINR(Math.round(corpus / Math.pow(1 + inflation, yr))),
+      formatINR(Math.round(corpus - invested)),
+      formatINR(Math.round(corpus / Math.pow(1 + inflation, year))),
     ]);
-    labels.push(`Year ${yr}`);
+
+    labels.push(`Year ${year}`);
     corpusSeries.push(Math.round(corpus));
     investedSeries.push(Math.round(invested));
   }
 
-  const r = periodicRate(rate, 12);
+  const periodic = periodicRate(rate, paymentsPerYear);
 
   return {
     summary: [
@@ -58,18 +88,19 @@ export function calculate(inputs) {
       { label: 'Inflation-Adjusted Maturity', value: formatINR(Math.round(inflationAdjustedMaturity)), sub: "Today's rupees" },
       { label: 'Interest Earned', value: formatINR(Math.round(interest)) },
       { label: 'Effective Yield', value: formatPercent(effectiveYield), sub: 'On total deposits' },
-      { label: 'Monthly Deposit', value: formatINR(Math.round(monthlyDeposit)) },
+      { label: 'Recurring Contribution', value: formatINR(Math.round(paymentAmount)), sub: `Every ${frequencyLabel(depositFrequency)}` },
     ],
     steps: [
-      `Monthly deposit = ${formatINR(monthlyDeposit)} for ${years} years (${months} months)`,
-      `Rate = ${formatPercent(rate * 100)} p.a.; monthly rate = ${formatPercent(r * 100, 4)}`,
-      `Maturity = PMT × [((1+r)^n − 1)/r] × (1+r) = ${formatINR(Math.round(maturity))}`,
-      `Nominal deposited = ${formatINR(Math.round(totalDeposited))}; Inflation-adjusted deposited = ${formatINR(Math.round(inflationAdjustedDeposited))}; Interest = ${formatINR(Math.round(interest))}`,
+      `${depositFrequency} contribution = ${formatINR(paymentAmount)} for ${years} years (${totalPeriods} installments)`,
+      `Rate = ${formatPercent(rate * 100)} p.a.; effective periodic rate = ${formatPercent(periodic * 100, 4)}`,
+      `Maturity = PMT x [((1+r)^n - 1)/r] x (1+r) = ${formatINR(Math.round(maturity))}`,
+      `Nominal deposited = ${formatINR(Math.round(totalDeposited))}; inflation-adjusted deposited = ${formatINR(Math.round(inflationAdjustedDeposited))}`,
     ],
     assumptions: [
-      'Recurring deposit with monthly compounding (standard RD formula)',
+      `Recurring deposit with ${depositFrequency} contributions`,
+      `Compounding frequency set to ${compoundingFrequency}`,
       'Fixed rate throughout tenure',
-      'Deposits made at start of each month',
+      'Deposits made at the start of each contribution period',
       'Pre-tax; TDS applicable per bank rules',
       `Inflation adjustment uses ${formatPercent(inflation * 100)} p.a.`,
     ],
@@ -102,14 +133,14 @@ export function calculate(inputs) {
     },
     insights: buildInsights({
       takeaways: [
-        `${formatINR(monthlyDeposit)}/month for ${years} years yields ${formatINR(Math.round(maturity))}.`,
+        `${formatINR(paymentAmount)} every ${frequencyLabel(depositFrequency)} for ${years} years yields ${formatINR(Math.round(maturity))}.`,
         `Interest component: ${formatINR(Math.round(interest))} (${formatPercent((interest / totalDeposited) * 100)} of deposits).`,
       ],
       tips: [
-        'RD instils disciplined saving — ideal for short to medium-term goals.',
-        'Compare RD rates with debt mutual funds for potentially better post-tax returns.',
+        'RD builds savings discipline for short and medium-term goals.',
+        'You can now compare monthly, quarterly, and yearly funding patterns with the same baseline amount.',
       ],
-      formula: 'Maturity = PMT × [((1+r)^n − 1)/r] × (1+r)',
+      formula: 'Maturity = PMT x [((1+r)^n - 1)/r] x (1+r)',
     }),
     pdfData: {
       title: 'Recurring Deposit Calculator',
@@ -121,6 +152,18 @@ export function calculate(inputs) {
       ],
       tables: [{ title: 'Yearly Breakdown', columns: ['Year', 'Nominal Deposited', 'Inflation-Adj. Deposited', 'Value', 'Interest', 'Inflation-Adj. Value'], rows }],
     },
-    raw: { monthlyDeposit, maturity, totalDeposited, inflationAdjustedDeposited, inflationAdjustedMaturity, interest, effectiveYield, months },
+    raw: {
+      monthlyDeposit,
+      paymentAmount,
+      maturity,
+      totalDeposited,
+      inflationAdjustedDeposited,
+      inflationAdjustedMaturity,
+      interest,
+      effectiveYield,
+      totalPeriods,
+      depositFrequency,
+      compoundingFrequency,
+    },
   };
 }
