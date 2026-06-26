@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Analytics } from '@vercel/analytics/react';
+import Clarity from '@microsoft/clarity';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -27,6 +28,10 @@ import CustomInflationCalculator from './pages/CustomInflationCalculator';
 import PortfolioDetailsPage from './pages/PortfolioDetailsPage';
 import './styles/main.css';
 import './styles/calculator.css';
+
+const projectId = "yourProjectId"
+
+Clarity.init(projectId);
 
 function fillRangeSlider(el) {
   const min = parseFloat(el.min);
