@@ -211,7 +211,7 @@ export default function CalculatorLayout({
   const [mobileScreen, setMobileScreen] = useState('input');
   const [openSections, setOpenSections] = useState({});
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 640);
-  const [resultInflationMode, setResultInflationMode] = useState('off');
+  const [resultInflationMode, setResultInflationMode] = useState('on');
   const hasInflationField = fields.some((field) => field.key === 'inflation');
 
   const resolvedDefaults = useMemo(() => {
@@ -235,12 +235,12 @@ export default function CalculatorLayout({
         const adjustedInputs = hasInflationField
           ? {
               ...rawInputs,
-              inflation: resultInflationMode === 'on' ? settings.defaultInflationRate : 0,
+              inflation: resultInflationMode === 'on' ? rawInputs.inflation : 0,
             }
           : rawInputs;
         return calculate(adjustedInputs);
       },
-      [calculate, hasInflationField, resultInflationMode, settings.defaultInflationRate]
+      [calculate, hasInflationField, resultInflationMode]
     )
   );
 
@@ -437,20 +437,24 @@ export default function CalculatorLayout({
       </>
     );
 
+  const renderSavedConfigs = () => (
+    <div className="calc-action-row">
+      <SavedConfigsPanel
+        storageKey={id}
+        pageLabel={title}
+        getConfig={getConfig}
+        applyConfig={applyConfig}
+        results={results}
+      />
+    </div>
+  );
+
   return (
     <div className="page calc-page">
       <div className="ph">
         <h1>{title}</h1>
         <p>{description}</p>
-        <div className="calc-action-row">
-          <SavedConfigsPanel
-            storageKey={id}
-            pageLabel={title}
-            getConfig={getConfig}
-            applyConfig={applyConfig}
-            results={results}
-          />
-        </div>
+        {!isMobile && renderSavedConfigs()}
       </div>
 
       <div className="calc-body">
@@ -458,9 +462,12 @@ export default function CalculatorLayout({
           <aside className="card calc-inputs-panel">
             {renderInputSections()}
             {isMobile && (
-              <button type="button" className="mini-btn primary calc-mobile-cta" onClick={() => setMobileScreen('output')}>
-                Calculate
-              </button>
+              <>
+                <button type="button" className="mini-btn primary calc-mobile-cta" onClick={() => setMobileScreen('output')}>
+                  Continue
+                </button>
+                {renderSavedConfigs()}
+              </>
             )}
           </aside>
         )}

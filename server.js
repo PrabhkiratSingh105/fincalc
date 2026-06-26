@@ -147,6 +147,63 @@ function normalizePublicConfig(input) {
   );
 }
 
+function slugify(value) {
+  const slug = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug || `portfolio-${Date.now()}`;
+}
+
+function resolvePortfolioSlug(configs, page, preferredSlug, username, portfolioId) {
+  const existingForPortfolio = configs.find(
+    (item) => item.page === page && item.username === username && item.portfolio?.id === portfolioId
+  );
+  if (existingForPortfolio) return existingForPortfolio.slug;
+
+  const existingForSlug = configs.find((item) => item.page === page && item.slug === preferredSlug);
+  if (!existingForSlug) return preferredSlug;
+  if (existingForSlug.username === username && existingForSlug.portfolio?.id === portfolioId) return preferredSlug;
+
+  const userSlug = slugify(`${preferredSlug}-${username}`);
+  const existingForUserSlug = configs.find((item) => item.page === page && item.slug === userSlug);
+  if (!existingForUserSlug) return userSlug;
+  if (existingForUserSlug.username === username && existingForUserSlug.portfolio?.id === portfolioId) return userSlug;
+
+  let index = 2;
+  let candidate = `${userSlug}-${index}`;
+  while (configs.some((item) => item.page === page && item.slug === candidate)) {
+    index += 1;
+    candidate = `${userSlug}-${index}`;
+  }
+  return candidate;
+}
+
+function normalizePublicPortfolio(input) {
+  const portfolio = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  const name = String(portfolio.name || '').trim();
+  if (!name) return null;
+
+  return {
+    id: String(portfolio.id || crypto.randomUUID()),
+    name,
+    inflationAdjusted: Boolean(portfolio.inflationAdjusted),
+    inflationRate: Number(portfolio.inflationRate ?? 6) || 6,
+    timelineYear: Math.min(100, Math.max(1, Number(portfolio.timelineYear ?? 1) || 1)),
+    updatedAt: portfolio.updatedAt || new Date().toISOString(),
+    items: Array.isArray(portfolio.items)
+      ? portfolio.items.map((item, index) => ({
+          id: String(item?.id || `item_${index}`),
+          type: String(item?.type || 'SIP'),
+          configId: String(item?.configId || ''),
+          configName: String(item?.configName || ''),
+          resolvedConfig: item?.resolvedConfig && typeof item.resolvedConfig === 'object' ? item.resolvedConfig : null,
+        }))
+      : [],
+  };
+}
+
 async function getAuthUser(req) {
   const header = req.headers.authorization || '';
   const match = header.match(/^Bearer\s+(.+)$/i);
@@ -216,6 +273,10 @@ function normalizeSettings(input) {
       id: String(portfolio?.id || `portfolio_${portfolioIndex}`),
       name: String(portfolio?.name || `Portfolio ${portfolioIndex + 1}`),
       inflationAdjusted: Boolean(portfolio?.inflationAdjusted),
+      inflationRate: Number(portfolio?.inflationRate ?? base.defaultInflationRate) || base.defaultInflationRate,
+      isPublic: Boolean(portfolio?.isPublic),
+      publicSlug: String(portfolio?.publicSlug || ''),
+      publicUrl: String(portfolio?.publicUrl || ''),
       timelineYear: Math.min(100, Math.max(1, Number(portfolio?.timelineYear ?? 1) || 1)),
       updatedAt: portfolio?.updatedAt || new Date().toISOString(),
       items: Array.isArray(portfolio?.items)
@@ -307,6 +368,58 @@ app.put('/api/settings', requireAuth, asyncHandler(async (req, res) => {
   req.auth.user.settings = normalizeSettings(req.body.settings);
   await writeUsers(req.auth.users);
   res.json({ settings: req.auth.user.settings });
+}));
+
+app.post('/api/public-portfolios', requireAuth, asyncHandler(async (req, res) => {
+  const portfolio = normalizePublicPortfolio(req.body.portfolio);
+  if (!portfolio) {
+    return res.status(400).json({ message: 'Portfolio data is incomplete.' });
+  }
+
+  const configs = await readPublicConfigs();
+  const username = req.auth.user.username;
+  const page = 'portfolio';
+  const preferredSlug = slugify(req.body.portfolio?.publicSlug || portfolio.name);
+  const slug = resolvePortfolioSlug(configs, page, preferredSlug, username, portfolio.id);
+  const existingEntry = configs.find((item) => item.page === page && item.slug === slug && item.username === username);
+  const entry = {
+    page,
+    slug,
+    username,
+    portfolio,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existingEntry) {
+    existingEntry.username = username;
+    existingEntry.portfolio = portfolio;
+    existingEntry.updatedAt = entry.updatedAt;
+  } else {
+    entry.createdAt = new Date().toISOString();
+    configs.unshift(entry);
+  }
+
+  await writePublicConfigs(configs.slice(0, 500));
+  res.status(201).json({
+    slug,
+    url: `${req.protocol}://${req.get('host')}/portfolio/${encodeURIComponent(slug)}`,
+    portfolio,
+  });
+}));
+
+app.get('/api/public-portfolios/:slug', asyncHandler(async (req, res) => {
+  const slug = slugify(req.params.slug);
+  const configs = await readPublicConfigs();
+  const entry = configs.find((item) => item.page === 'portfolio' && item.slug === slug);
+  if (!entry?.portfolio) return res.status(404).json({ message: 'Public portfolio not found.' });
+
+  res.json({
+    slug: entry.slug,
+    username: entry.username,
+    portfolio: entry.portfolio,
+    createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
+  });
 }));
 
 app.get('/api/history', requireAuth, (req, res) => {

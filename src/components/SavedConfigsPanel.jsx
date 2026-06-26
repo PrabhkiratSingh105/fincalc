@@ -329,7 +329,7 @@ export default function SavedConfigsPanel({
           disabled={authLoading}
         >
           <span className="material-symbols-rounded">bookmark_add</span>
-          Save config
+          Save Config
         </button>
         <button
           type="button"
@@ -342,7 +342,7 @@ export default function SavedConfigsPanel({
           disabled={authLoading}
         >
           <span className="material-symbols-rounded">folder_open</span>
-          My configs
+          Open Config
         </button>
       </div>
 
@@ -406,7 +406,7 @@ export default function SavedConfigsPanel({
             <div>
               <h2 id="saved-config-title">Saved configurations</h2>
               <p>
-                {pageLabel} · {usingLocalStore ? "local browser configs" : user ? `for ${user.username}` : "local browser configs"}
+                {pageLabel} - {usingLocalStore ? "local browser configs" : user ? `for ${user.username}` : "local browser configs"}
               </p>
             </div>
             <button
@@ -446,7 +446,7 @@ export default function SavedConfigsPanel({
                   <input
                     type="text"
                     className="saved-config-input"
-                    placeholder="Name this configuration…"
+                    placeholder="Name this configuration..."
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSaveNew()}

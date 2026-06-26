@@ -15,10 +15,12 @@ function goalProbability(projected, goal, years, returnRate) {
 }
 
 export function calculate(inputs) {
-  const goalAmount = parseNum(inputs.goalAmount, 5000000);
+  const currentGoalAmount = parseNum(inputs.goalAmount, 5000000);
   const goalYears = parseNum(inputs.goalYears, 10);
+  const inflation = parseNum(inputs.inflation, 6) / 100;
   const returnRate = parseNum(inputs.returnRate, 12) / 100;
   const existingInvestment = parseNum(inputs.existingInvestment, 0);
+  const goalAmount = currentGoalAmount * Math.pow(1 + inflation, goalYears);
 
   const months = goalYears * 12;
   const fvExisting = fvLumpsum(existingInvestment, returnRate, goalYears);
@@ -49,14 +51,16 @@ export function calculate(inputs) {
 
   return {
     summary: [
-      { label: 'Goal Amount', value: formatINR(Math.round(goalAmount)), tone: 'primary' },
+      { label: 'Future Goal Amount', value: formatINR(Math.round(goalAmount)), tone: 'primary' },
+      { label: "Today's Goal Amount", value: formatINR(Math.round(currentGoalAmount)) },
       { label: 'Required SIP', value: formatINR(Math.round(requiredSip)), sub: 'Monthly investment needed' },
       { label: 'Required Lumpsum', value: formatINR(Math.round(requiredLumpsum)), sub: 'One-time investment today' },
       { label: 'Existing FV', value: formatINR(Math.round(fvExisting)), sub: 'Future value of current investment' },
       { label: 'Goal Probability', value: `${probability}%`, tone: probability >= 70 ? 'success' : probability >= 40 ? 'warning' : 'danger' },
     ],
     steps: [
-      `Goal: ${formatINR(goalAmount)} in ${goalYears} years at ${formatPercent(returnRate * 100)} return`,
+      `Goal: ${formatINR(Math.round(goalAmount))} in ${goalYears} years at ${formatPercent(returnRate * 100)} return`,
+      `Today's goal ${formatINR(currentGoalAmount)} inflated at ${formatPercent(inflation * 100)} becomes ${formatINR(Math.round(goalAmount))}`,
       `Existing investment FV = ${formatINR(Math.round(fvExisting))}`,
       `Remaining gap = ${formatINR(Math.round(remaining))}`,
       `Required SIP = ${formatINR(Math.round(requiredSip))}/month`,
@@ -66,7 +70,8 @@ export function calculate(inputs) {
       `Constant ${formatPercent(returnRate * 100)} annual return`,
       'SIP invested at start of each month',
       'Goal probability is a heuristic based on projected vs target corpus',
-      'No taxes, expense ratio, or inflation adjustment',
+      `Goal amount inflated at ${formatPercent(inflation * 100)} p.a.`,
+      'No taxes or expense ratio',
     ],
     charts: [
       {
@@ -118,12 +123,14 @@ export function calculate(inputs) {
         'Start early — each year delayed increases the required SIP significantly.',
         'Consider a hybrid: partial lumpsum + SIP to balance liquidity and returns.',
       ],
+      inflation: `At ${formatPercent(inflation * 100)} inflation, today's ${formatINR(currentGoalAmount)} goal needs ${formatINR(Math.round(goalAmount))} in ${goalYears} years.`,
       formula: 'SIP = FV / [((1+r)^n − 1)/r × (1+r)]',
     }),
     pdfData: {
       title: 'Goal SIP Planner',
       summary: [
-        { label: 'Goal', value: formatINR(Math.round(goalAmount)) },
+        { label: 'Future Goal', value: formatINR(Math.round(goalAmount)) },
+        { label: "Today's Goal", value: formatINR(Math.round(currentGoalAmount)) },
         { label: 'Required SIP', value: formatINR(Math.round(requiredSip)) },
         { label: 'Required Lumpsum', value: formatINR(Math.round(requiredLumpsum)) },
         { label: 'Goal Probability', value: `${probability}%` },
@@ -132,6 +139,7 @@ export function calculate(inputs) {
     },
     raw: {
       goalAmount,
+      currentGoalAmount,
       requiredSip,
       requiredLumpsum,
       fvExisting,

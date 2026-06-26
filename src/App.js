@@ -26,12 +26,16 @@ import RdCalculator from './pages/RdCalculator';
 import ProfilePage from './pages/ProfilePage';
 import CustomInflationCalculator from './pages/CustomInflationCalculator';
 import PortfolioDetailsPage from './pages/PortfolioDetailsPage';
+import PortfolioLibraryPage from './pages/PortfolioLibraryPage';
 import './styles/main.css';
 import './styles/calculator.css';
 
-const projectId = "yourProjectId"
+const clarityProjectId = process.env.REACT_APP_CLARITY_PROJECT_ID;
+const enableVercelInsights = process.env.REACT_APP_ENABLE_VERCEL_INSIGHTS === 'true';
 
-Clarity.init(projectId);
+if (clarityProjectId && clarityProjectId !== 'yourProjectId') {
+  Clarity.init(clarityProjectId);
+}
 
 function fillRangeSlider(el) {
   const min = parseFloat(el.min);
@@ -79,6 +83,7 @@ function App() {
             <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/portfolio" element={<PortfolioLibraryPage />} />
               <Route path="/portfolio/:portfolioId" element={<PortfolioDetailsPage />} />
             <Route path="/sip/:username/config/:configName" element={<SIPCalculator />} />
             <Route path="/sip" element={<SIPCalculator />} />
@@ -111,8 +116,8 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/custom-inflation" element={<CustomInflationCalculator />} />
             </Routes>
-            <SpeedInsights />
-            <Analytics />
+            {enableVercelInsights && <SpeedInsights />}
+            {enableVercelInsights && <Analytics />}
           </BrowserRouter>
         </SettingsProvider>
       </AuthProvider>

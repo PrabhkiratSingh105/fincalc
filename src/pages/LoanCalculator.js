@@ -3,12 +3,13 @@ import CalculatorLayout from '../components/calculator/CalculatorLayout';
 import { calculateLoan } from '../calculators';
 
 const FIELDS = [
-  { key: 'loanAmount', label: 'Loan Amount (₹)', min: 50000, max: 50000000, step: 50000, tooltip: 'Principal borrowed.' },
+  { key: 'loanAmount', label: 'Loan Amount (Rs)', min: 50000, max: 50000000, step: 50000, tooltip: 'Principal borrowed.' },
   { key: 'interestRate', label: 'Interest Rate (% p.a.)', min: 1, max: 24, step: 0.1, tooltip: 'Fixed annual interest rate.' },
+  { key: 'inflation', label: 'Inflation Rate (% p.a.)', min: 0, max: 15, step: 0.5, tooltip: 'Used to estimate repayment burden in today\'s rupees.' },
   { key: 'years', label: 'Loan Tenure (Years)', min: 1, max: 30, tooltip: 'Repayment period in years.' },
 ];
 
-const DEFAULTS = { loanAmount: 2500000, interestRate: 8.5, years: 20 };
+const DEFAULTS = { loanAmount: 2500000, interestRate: 8.5, inflation: 6, years: 20 };
 
 export default function LoanCalculator() {
   return (

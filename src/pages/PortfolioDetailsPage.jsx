@@ -14,13 +14,14 @@ import {
 } from '../utils/portfolio';
 import { formatINR } from '../utils/format';
 import { API } from "../config";
-function ConfigSelect({ type, item, options, onChange }) {
+function ConfigSelect({ type, item, options, onChange, disabled = false }) {
   const pageKey = PORTFOLIO_TYPE_TO_PAGE[type];
 
   return (
     <select
       className="calc-input"
       value={item.configId || ''}
+      disabled={disabled}
       onChange={(event) => {
         const selected = options.find((entry) => entry.id === event.target.value);
         onChange({
@@ -33,6 +34,9 @@ function ConfigSelect({ type, item, options, onChange }) {
       }}
     >
       <option value="">Select saved {pageKey} config</option>
+      {item.configId && !options.some((entry) => entry.id === item.configId) && (
+        <option value={item.configId}>{item.configName || 'Saved configuration'}</option>
+      )}
       {options.map((entry) => (
         <option key={entry.id} value={entry.id}>
           {entry.name}
@@ -48,15 +52,46 @@ export default function PortfolioDetailsPage() {
   const { settings, updateSettings } = useSettings();
   const { user, token } = useAuth();
   const portfolios = settings.portfolios || [];
-  const portfolio = portfolios.find((entry) => entry.id === portfolioId);
+  const privatePortfolio = user ? portfolios.find((entry) => entry.id === portfolioId) : null;
+  const [publicPortfolio, setPublicPortfolio] = useState(null);
+  const [publicLoadState, setPublicLoadState] = useState('idle');
+  const [publishState, setPublishState] = useState({ loading: false, message: '', url: '' });
+  const portfolio = privatePortfolio || publicPortfolio;
+  const isPublicView = Boolean(!privatePortfolio && publicPortfolio);
+  const canEdit = Boolean(privatePortfolio && user);
   const [configLibrary, setConfigLibrary] = useState({});
-  const inflationRate = settings.defaultInflationRate / 100;
+  const portfolioInflation = Number(portfolio?.inflationRate ?? settings.defaultInflationRate) || settings.defaultInflationRate;
+  const inflationRate = portfolioInflation / 100;
 
   useEffect(() => {
-    if (!portfolio && portfolios.length > 0) {
+    if (user && !privatePortfolio && portfolios.length > 0 && publicLoadState === 'not-found') {
       navigate('/');
     }
-  }, [navigate, portfolio, portfolios.length]);
+  }, [navigate, privatePortfolio, portfolios.length, publicLoadState, user]);
+
+  useEffect(() => {
+    if (privatePortfolio || !portfolioId) return;
+
+    let alive = true;
+    setPublicLoadState('loading');
+
+    fetch(`${API}/api/public-portfolios/${encodeURIComponent(portfolioId)}`)
+      .then((response) => parseApiResponse(response, 'Public portfolio not found.'))
+      .then((data) => {
+        if (!alive) return;
+        setPublicPortfolio(data.portfolio || null);
+        setPublicLoadState(data.portfolio ? 'ready' : 'not-found');
+      })
+      .catch(() => {
+        if (!alive) return;
+        setPublicPortfolio(null);
+        setPublicLoadState('not-found');
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [portfolioId, privatePortfolio]);
 
   useEffect(() => {
     let alive = true;
@@ -91,6 +126,7 @@ export default function PortfolioDetailsPage() {
   }, [token, user]);
 
   const updatePortfolio = (nextPortfolio) => {
+    if (!canEdit) return;
     updateSettings((prev) => ({
       ...prev,
       portfolios: (prev.portfolios || []).map((entry) =>
@@ -105,7 +141,7 @@ export default function PortfolioDetailsPage() {
     () =>
       portfolio
         ? buildPortfolioSnapshot(portfolio.items || [], portfolio.timelineYear, inflationRate, portfolio.inflationAdjusted)
-        : { totalNetWorth: 0, monthlyPayments: 0, monthlyWithdrawals: 0 },
+        : { totalNetWorth: 0, monthlyInvestments: 0, monthlyPayments: 0, monthlyWithdrawals: 0 },
     [inflationRate, portfolio]
   );
 
@@ -122,19 +158,75 @@ export default function PortfolioDetailsPage() {
     [inflationRate, portfolio]
   );
 
-  if (!portfolio) return null;
+  const publishPortfolio = async () => {
+    if (!portfolio || !token) return;
+    setPublishState({ loading: true, message: '', url: '' });
+
+    try {
+      const response = await fetch(`${API}/api/public-portfolios`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ portfolio }),
+      });
+      const data = await parseApiResponse(response, 'Could not make portfolio public.');
+      const nextPortfolio = {
+        ...portfolio,
+        isPublic: true,
+        publicSlug: data.slug,
+        publicUrl: data.url,
+      };
+      updatePortfolio(nextPortfolio);
+      setPublishState({ loading: false, message: 'Public link is ready.', url: data.url });
+    } catch (error) {
+      setPublishState({ loading: false, message: error.message || 'Could not make portfolio public.', url: '' });
+    }
+  };
+
+  if (!portfolio) {
+    if (publicLoadState === 'loading') {
+      return (
+        <div className="page portfolio-page">
+          <div className="ph home-hero">
+            <h1>Loading portfolio</h1>
+            <p>Fetching the portfolio workspace.</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="page portfolio-page">
+        <div className="ph home-hero">
+          <h1>Portfolio</h1>
+          <p>Please log in to view private portfolios, or check that the public portfolio URL is correct.</p>
+        </div>
+        <div className="portfolio-index-layout">
+          <section className="card portfolio-login-card">
+            <span className="material-symbols-rounded">lock</span>
+            <div>
+              <div className="slbl">Login Required</div>
+              <p className="settings-note">Use the login button in the header to access your saved portfolios.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
 
   const currentCalendarYear = new Date().getFullYear() + portfolio.timelineYear - 1;
 
   return (
     <div className="page portfolio-page">
       <div className="ph home-hero">
-        <button type="button" className="calc-mobile-back portfolio-back-link" onClick={() => navigate('/')}>
+        <button type="button" className="calc-mobile-back portfolio-back-link" onClick={() => navigate('/portfolio')}>
           <span className="material-symbols-rounded">arrow_back</span>
           Back to portfolios
         </button>
         <h1>{portfolio.name}</h1>
-        <p>Choose saved calculator configurations for each asset or liability row and project net worth through the selected timeline year.</p>
+        <p>{isPublicView ? 'Read-only public portfolio projection.' : 'Choose saved calculator configurations for each asset or liability row and project net worth through the selected timeline year.'}</p>
       </div>
 
       <div className="portfolio-layout">
@@ -146,13 +238,28 @@ export default function PortfolioDetailsPage() {
                 type="text"
                 className="calc-input"
                 value={portfolio.name}
+                disabled={!canEdit}
                 onChange={(event) => updatePortfolio({ ...portfolio, name: event.target.value })}
+              />
+            </label>
+            <label className="portfolio-name-field">
+              <span className="slbl">Inflation Rate (%)</span>
+              <input
+                type="number"
+                className="calc-input"
+                min="0"
+                max="15"
+                step="0.5"
+                value={portfolioInflation}
+                disabled={!canEdit}
+                onChange={(event) => updatePortfolio({ ...portfolio, inflationRate: Number(event.target.value) })}
               />
             </label>
             <div className="portfolio-toggle-group">
               <button
                 type="button"
                 className={`portfolio-toggle ${portfolio.inflationAdjusted ? '' : 'active'}`}
+                disabled={!canEdit}
                 onClick={() => updatePortfolio({ ...portfolio, inflationAdjusted: false })}
               >
                 Non-Inflation Adjusted
@@ -160,11 +267,30 @@ export default function PortfolioDetailsPage() {
               <button
                 type="button"
                 className={`portfolio-toggle ${portfolio.inflationAdjusted ? 'active' : ''}`}
+                disabled={!canEdit}
                 onClick={() => updatePortfolio({ ...portfolio, inflationAdjusted: true })}
               >
                 Inflation Adjusted
               </button>
             </div>
+            {canEdit && (
+              <div className="portfolio-public-actions">
+                <button
+                  type="button"
+                  className="mini-btn primary"
+                  onClick={publishPortfolio}
+                  disabled={publishState.loading}
+                >
+                  {publishState.loading ? 'Publishing...' : 'Make Public'}
+                </button>
+                {(publishState.url || portfolio.publicUrl) && (
+                  <a className="portfolio-public-link" href={publishState.url || portfolio.publicUrl}>
+                    {publishState.url || portfolio.publicUrl}
+                  </a>
+                )}
+                {publishState.message && <span className="settings-note">{publishState.message}</span>}
+              </div>
+            )}
           </div>
 
           <div className="portfolio-table-wrap">
@@ -186,6 +312,7 @@ export default function PortfolioDetailsPage() {
                           <select
                             className="calc-input"
                             value={item.type}
+                            disabled={!canEdit}
                             onChange={(event) =>
                               updatePortfolio({
                                 ...portfolio,
@@ -207,6 +334,7 @@ export default function PortfolioDetailsPage() {
                             type={item.type}
                             item={item}
                             options={options}
+                            disabled={!canEdit}
                             onChange={(nextItem) =>
                               updatePortfolio({
                                 ...portfolio,
@@ -216,6 +344,7 @@ export default function PortfolioDetailsPage() {
                           />
                         </td>
                         <td>
+                          {canEdit && (
                           <button
                             type="button"
                             className="saved-config-action danger"
@@ -228,6 +357,7 @@ export default function PortfolioDetailsPage() {
                           >
                             Remove
                           </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -243,18 +373,20 @@ export default function PortfolioDetailsPage() {
             </table>
           </div>
 
-          <button
-            type="button"
-            className="mini-btn primary portfolio-add-row"
-            onClick={() =>
-              updatePortfolio({
-                ...portfolio,
-                items: [...(portfolio.items || []), createDefaultPortfolioItem('SIP')],
-              })
-            }
-          >
-            + Add Row
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              className="mini-btn primary portfolio-add-row"
+              onClick={() =>
+                updatePortfolio({
+                  ...portfolio,
+                  items: [...(portfolio.items || []), createDefaultPortfolioItem('SIP')],
+                })
+              }
+            >
+              + Add Row
+            </button>
+          )}
         </section>
 
         <aside className="portfolio-summary-panel">
@@ -265,20 +397,24 @@ export default function PortfolioDetailsPage() {
 
             <div className="portfolio-stats-grid">
               <div className="portfolio-stat">
-                <span>Monthly Payments</span>
-                <strong>{formatINR(Math.round(snapshot.monthlyPayments))}</strong>
+                <span>Monthly Investment</span>
+                <strong>{formatINR(Math.round(snapshot.monthlyInvestments || 0))}</strong>
               </div>
               <div className="portfolio-stat">
                 <span>Monthly Withdrawals</span>
                 <strong>{formatINR(Math.round(snapshot.monthlyWithdrawals || 0))}</strong>
               </div>
               <div className="portfolio-stat">
+                <span>Monthly Loan EMI</span>
+                <strong>{formatINR(Math.round(snapshot.monthlyPayments || 0))}</strong>
+              </div>
+              <div className="portfolio-stat">
                 <span>Current Year</span>
                 <strong>{currentCalendarYear}</strong>
               </div>
               <div className="portfolio-stat">
-                <span>Default Inflation</span>
-                <strong>{settings.defaultInflationRate}%</strong>
+                <span>Inflation</span>
+                <strong>{portfolioInflation}%</strong>
               </div>
             </div>
 
@@ -291,6 +427,7 @@ export default function PortfolioDetailsPage() {
                 min="1"
                 max="100"
                 value={portfolio.timelineYear}
+                disabled={!canEdit}
                 onChange={(event) =>
                   updatePortfolio({ ...portfolio, timelineYear: Number(event.target.value) })
                 }

@@ -5,6 +5,7 @@ import { buildInsights } from '../utils/calculatorHelpers';
 export function calculate(inputs) {
   const P = parseNum(inputs.loanAmount, 2500000);
   const rAnn = parseNum(inputs.interestRate, 8.5) / 100;
+  const inflation = parseNum(inputs.inflation, 6) / 100;
   const years = parseNum(inputs.years, 20);
   const months = years * 12;
   const r = periodicRate(rAnn, 12);
@@ -13,52 +14,62 @@ export function calculate(inputs) {
   const totalInterest = Math.max(0, totalPayment - P);
 
   let balance = P;
+  let realTotalPayment = 0;
   const rows = [];
   const balanceSeries = [];
+  const realPaymentSeries = [];
   const labels = [];
 
-  for (let yr = 1; yr <= years; yr++) {
+  for (let yr = 1; yr <= years; yr += 1) {
     let yrInterest = 0;
     let yrPrincipal = 0;
-    for (let mo = 1; mo <= 12; mo++) {
+    let yrRealPayment = 0;
+    for (let mo = 1; mo <= 12; mo += 1) {
+      const elapsedYears = ((yr - 1) * 12 + mo) / 12;
       const monthInterest = balance * r;
       const principalPaid = Math.min(balance, emiAmount - monthInterest);
       balance = Math.max(0, balance - principalPaid);
       yrInterest += monthInterest;
       yrPrincipal += principalPaid;
+      yrRealPayment += emiAmount / Math.pow(1 + inflation, elapsedYears);
     }
+    realTotalPayment += yrRealPayment;
     rows.push([
       yr,
       formatINR(Math.round(emiAmount)),
+      formatINR(Math.round(yrRealPayment)),
       formatINR(Math.round(yrPrincipal)),
       formatINR(Math.round(yrInterest)),
       formatINR(Math.round(balance)),
     ]);
     labels.push(`Year ${yr}`);
     balanceSeries.push(Math.round(balance));
+    realPaymentSeries.push(Math.round(yrRealPayment));
   }
 
   return {
     summary: [
       { label: 'Monthly EMI', value: formatINR(Math.round(emiAmount)), tone: 'primary', sub: 'Fixed monthly payment' },
+      { label: 'Real Total Payment', value: formatINR(Math.round(realTotalPayment)), tone: 'success', sub: "Today's rupees" },
       { label: 'Total Interest', value: formatINR(Math.round(totalInterest)), tone: 'warning' },
       { label: 'Total Payment', value: formatINR(Math.round(totalPayment)) },
       { label: 'Principal', value: formatINR(Math.round(P)) },
-      { label: 'Interest Ratio', value: formatPercent((totalInterest / P) * 100), sub: 'Interest as % of principal' },
+      { label: 'Interest Ratio', value: formatPercent(P > 0 ? (totalInterest / P) * 100 : 0), sub: 'Interest as % of principal' },
     ],
     steps: [
       `Loan amount P = ${formatINR(P)}, rate = ${formatPercent(rAnn * 100)}, tenure = ${years} years (${months} months)`,
-      `Monthly rate r = (1 + ${formatPercent(rAnn * 100)})^(1/12) − 1 = ${formatPercent(r * 100, 4)}`,
+      `Monthly rate r = (1 + ${formatPercent(rAnn * 100)})^(1/12) - 1 = ${formatPercent(r * 100, 4)}`,
       r === 0
         ? `EMI = P / n = ${formatINR(Math.round(emiAmount))}`
-        : `EMI = P × r × (1+r)^n / ((1+r)^n − 1) = ${formatINR(Math.round(emiAmount))}`,
-      `Total payment = EMI × ${months} = ${formatINR(Math.round(totalPayment))}`,
-      `Total interest = ${formatINR(Math.round(totalPayment))} − ${formatINR(P)} = ${formatINR(Math.round(totalInterest))}`,
+        : `EMI = P x r x (1+r)^n / ((1+r)^n - 1) = ${formatINR(Math.round(emiAmount))}`,
+      `Total payment = EMI x ${months} = ${formatINR(Math.round(totalPayment))}`,
+      `Inflation-adjusted total payment = ${formatINR(Math.round(realTotalPayment))}`,
     ],
     assumptions: [
       'Fixed interest rate throughout tenure (reducing balance method)',
       'Equal monthly EMI with no prepayments or defaults',
       'Monthly compounding as per standard Indian loan practice',
+      `Inflation adjustment uses ${formatPercent(inflation * 100)} p.a.`,
     ],
     charts: [
       {
@@ -71,45 +82,46 @@ export function calculate(inputs) {
         height: 280,
       },
       {
-        title: 'Principal vs Interest',
-        type: 'doughnut',
+        title: 'Yearly Real Payment',
+        type: 'bar',
         data: {
-          labels: ['Principal', 'Interest'],
-          datasets: [{ data: [Math.round(P), Math.round(totalInterest)] }],
+          labels,
+          datasets: [{ label: 'Inflation-Adjusted Payment', data: realPaymentSeries }],
         },
         height: 240,
       },
     ],
     yearlyTable: {
       title: 'Year-by-Year Amortization',
-      columns: ['Year', 'EMI', 'Principal Paid', 'Interest Paid', 'Balance'],
+      columns: ['Year', 'EMI', 'Real Payment', 'Principal Paid', 'Interest Paid', 'Balance'],
       rows,
     },
     insights: buildInsights({
       takeaways: [
-        `You pay ${formatINR(Math.round(totalInterest))} in interest — ${formatPercent((totalInterest / totalPayment) * 100)} of total outflow.`,
+        `You pay ${formatINR(Math.round(totalInterest))} in interest - ${formatPercent(totalPayment > 0 ? (totalInterest / totalPayment) * 100 : 0)} of total outflow.`,
         `EMI of ${formatINR(Math.round(emiAmount))}/month for ${years} years.`,
       ],
       mistakes: [
-        'Choosing maximum tenure — lowers EMI but dramatically increases total interest.',
+        'Choosing maximum tenure lowers EMI but dramatically increases total interest.',
         'Ignoring processing fees, insurance, and other charges in affordability.',
       ],
       tips: [
         'Even one extra EMI per year can significantly reduce total interest.',
         'Compare floating vs fixed rates and consider prepayment options.',
       ],
-      formula: 'EMI = P × r × (1+r)^n / ((1+r)^n − 1)',
-      example: `₹25L home loan at 8.5% for 20 years → EMI ~₹21,700; total interest ~₹27L.`,
+      formula: 'EMI = P x r x (1+r)^n / ((1+r)^n - 1)',
+      inflation: `At ${formatPercent(inflation * 100)} inflation, total repayments feel like ${formatINR(Math.round(realTotalPayment))} today.`,
     }),
     pdfData: {
       title: 'Loan EMI Report',
       summary: [
         { label: 'EMI', value: formatINR(Math.round(emiAmount)) },
+        { label: 'Real Total Payment', value: formatINR(Math.round(realTotalPayment)) },
         { label: 'Total Interest', value: formatINR(Math.round(totalInterest)) },
         { label: 'Total Payment', value: formatINR(Math.round(totalPayment)) },
       ],
-      tables: [{ title: 'Amortization', columns: ['Year', 'EMI', 'Principal Paid', 'Interest Paid', 'Balance'], rows }],
+      tables: [{ title: 'Amortization', columns: ['Year', 'EMI', 'Real Payment', 'Principal Paid', 'Interest Paid', 'Balance'], rows }],
     },
-    raw: { P, emiAmount, totalInterest, totalPayment, months },
+    raw: { P, emiAmount, totalInterest, totalPayment, realTotalPayment, months },
   };
 }

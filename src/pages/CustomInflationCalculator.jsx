@@ -50,6 +50,7 @@ export default function CustomInflationCalculator() {
                     <td>
                       <input
                         type="number"
+                        inputMode="decimal"
                         min="0"
                         max="100"
                         step="0.1"
@@ -69,6 +70,7 @@ export default function CustomInflationCalculator() {
                     <td>
                       <input
                         type="number"
+                        inputMode="decimal"
                         min="0"
                         max="25"
                         step="0.1"

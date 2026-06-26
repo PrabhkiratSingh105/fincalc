@@ -23,6 +23,7 @@ const NAV = [
       { path: 'retirement', icon: 'elderly', color: 'indigo', title: 'Retirement Calculator', sub: 'Corpus & readiness score' },
       { path: 'inflation', icon: 'trending_down', color: 'amber', title: 'Inflation Calculator', sub: 'Purchasing power impact' },
       { path: 'custom-inflation', icon: 'table_chart', color: 'sky', title: 'Custom Inflation', sub: 'Weighted inflation profile' },
+      { path: 'goal-sip', icon: 'track_changes', color: 'violet', title: 'Goal SIP Calculator', sub: 'Monthly amount for a target' },
       { path: 'swp', icon: 'account_balance_wallet', color: 'indigo', title: 'SWP Calculator', sub: 'Systematic withdrawal' },
     ],
   },
@@ -33,6 +34,7 @@ const NAV = [
       { path: 'loan', icon: 'payments', color: 'rose', title: 'Loan Calculator', sub: 'EMI & amortization' },
       { path: 'loan-prepayment', icon: 'speed', color: 'green', title: 'Loan Prepayment', sub: 'Interest & time saved' },
       { path: 'loan-eligibility', icon: 'fact_check', color: 'sky', title: 'Loan Eligibility', sub: 'Max loan amount' },
+      { path: 'income-tax', icon: 'receipt_long', color: 'sky', title: 'Income Tax', sub: 'Annual tax estimate' },
     ],
   },
 ];
@@ -48,6 +50,7 @@ export default function Header({ setShowAuthModal }) {
   const handleCalcSelect = (path) => {
     navigate(`/${path}`);
     setOpenDropdown(null);
+    setAccountMenuOpen(false);
   };
 
   const handleLogout = async () => {
@@ -84,7 +87,10 @@ export default function Header({ setShowAuthModal }) {
             <div
               key={group.id}
               className={`nav-item ${openDropdown === group.id ? 'open' : ''}`}
-              onClick={() => setOpenDropdown(openDropdown === group.id ? null : group.id)}
+              onClick={() => {
+                setOpenDropdown(openDropdown === group.id ? null : group.id);
+                setAccountMenuOpen(false);
+              }}
             >
               {group.label} <span className="material-symbols-rounded arr">expand_more</span>
               <div className="dropdown" onClick={(event) => event.stopPropagation()}>
@@ -146,6 +152,17 @@ export default function Header({ setShowAuthModal }) {
                   >
                     <span className="material-symbols-rounded nav-icon-sm">tune</span>
                     Profile
+                  </button>
+                  <button
+                    type="button"
+                    className="account-action"
+                    onClick={() => {
+                      navigate('/portfolio');
+                      setAccountMenuOpen(false);
+                    }}
+                  >
+                    <span className="material-symbols-rounded nav-icon-sm">folder_open</span>
+                    Portfolio Library
                   </button>
                   <button type="button" className="account-action" onClick={handleLogout}>
                     <span className="material-symbols-rounded nav-icon-sm">logout</span>

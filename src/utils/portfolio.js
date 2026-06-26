@@ -59,7 +59,7 @@ function calculateLoanOutstanding(principal, annualRate, totalMonths, elapsedMon
 
 function getValueFromResolvedConfig(type, config, year, inflationRate, inflationAdjusted) {
   if (!config || typeof config !== 'object') {
-    return { netWorthContribution: 0, monthlyPayment: 0, monthlyWithdrawal: 0 };
+    return { netWorthContribution: 0, monthlyInvestment: 0, monthlyPayment: 0, monthlyWithdrawal: 0 };
   }
 
   switch (type) {
@@ -69,7 +69,7 @@ function getValueFromResolvedConfig(type, config, year, inflationRate, inflation
       const amount = Number(config.monthlyAmount || 0);
       const rate = Number(config.ratePercentage || 0) / 100;
       const value = fvSip(amount, rate, activeYears * 12);
-      return { netWorthContribution: adjustForInflation(value, inflationRate, year, inflationAdjusted), monthlyPayment: amount, monthlyWithdrawal: 0 };
+      return { netWorthContribution: adjustForInflation(value, inflationRate, year, inflationAdjusted), monthlyInvestment: amount, monthlyPayment: 0, monthlyWithdrawal: 0 };
     }
     case 'Loan': {
       const totalMonths = Number(config.years || 0) * 12;
@@ -82,6 +82,7 @@ function getValueFromResolvedConfig(type, config, year, inflationRate, inflation
       );
       return {
         netWorthContribution: -adjustForInflation(balance, inflationRate, year, inflationAdjusted),
+        monthlyInvestment: 0,
         monthlyPayment: elapsedMonths < totalMonths ? monthlyEmi : 0,
         monthlyWithdrawal: 0,
       };
@@ -90,25 +91,25 @@ function getValueFromResolvedConfig(type, config, year, inflationRate, inflation
       const activeYears = Math.min(year, Number(config.years || 0));
       const frequency = Number(config.compoundingFrequency || 4);
       const value = fdMaturity(Number(config.principal || 0), Number(config.rate || 0) / 100, activeYears, frequency);
-      return { netWorthContribution: adjustForInflation(value, inflationRate, year, inflationAdjusted), monthlyPayment: 0, monthlyWithdrawal: 0 };
+      return { netWorthContribution: adjustForInflation(value, inflationRate, year, inflationAdjusted), monthlyInvestment: 0, monthlyPayment: 0, monthlyWithdrawal: 0 };
     }
     case 'RD': {
       const activeYears = Math.min(year, Number(config.years || 0));
       const monthlyDeposit = Number(config.monthlyDeposit || 0);
       const annualRate = Number(config.rate || 0) / 100;
       const value = fvSip(monthlyDeposit, annualRate, activeYears * 12);
-      return { netWorthContribution: adjustForInflation(value, inflationRate, year, inflationAdjusted), monthlyPayment: monthlyDeposit, monthlyWithdrawal: 0 };
+      return { netWorthContribution: adjustForInflation(value, inflationRate, year, inflationAdjusted), monthlyInvestment: monthlyDeposit, monthlyPayment: 0, monthlyWithdrawal: 0 };
     }
     case 'Lumpsum': {
       const activeYears = Math.min(year, Number(config.years || 0));
       const value = fvLumpsum(Number(config.amount || 0), Number(config.ratePercentage || 0) / 100, activeYears);
-      return { netWorthContribution: adjustForInflation(value, inflationRate, year, inflationAdjusted), monthlyPayment: 0, monthlyWithdrawal: 0 };
+      return { netWorthContribution: adjustForInflation(value, inflationRate, year, inflationAdjusted), monthlyInvestment: 0, monthlyPayment: 0, monthlyWithdrawal: 0 };
     }
     case 'PPF': {
       const activeYears = Math.min(year, Number(config.years || 15));
       const monthlyAmount = Number(config.monthlyAmount || 0);
       const value = fvSip(monthlyAmount, Number(config.interestRate || 0) / 100, activeYears * 12);
-      return { netWorthContribution: adjustForInflation(value, inflationRate, year, inflationAdjusted), monthlyPayment: monthlyAmount, monthlyWithdrawal: 0 };
+      return { netWorthContribution: adjustForInflation(value, inflationRate, year, inflationAdjusted), monthlyInvestment: monthlyAmount, monthlyPayment: 0, monthlyWithdrawal: 0 };
     }
     case 'SWP': {
       const totalYears = Number(config.years || 0);
@@ -125,12 +126,13 @@ function getValueFromResolvedConfig(type, config, year, inflationRate, inflation
 
       return {
         netWorthContribution: adjustForInflation(corpus, inflationRate, year, inflationAdjusted),
+        monthlyInvestment: 0,
         monthlyPayment: 0,
         monthlyWithdrawal: year < totalYears ? monthlyWithdrawal : 0,
       };
     }
     default:
-      return { netWorthContribution: 0, monthlyPayment: 0, monthlyWithdrawal: 0 };
+      return { netWorthContribution: 0, monthlyInvestment: 0, monthlyPayment: 0, monthlyWithdrawal: 0 };
   }
 }
 
@@ -156,10 +158,11 @@ export function buildPortfolioSnapshot(items, selectedYear, inflationRate, infla
       const result = getValueFromResolvedConfig(item.type, item.resolvedConfig, selectedYear, inflationRate, inflationAdjusted);
       return {
         totalNetWorth: acc.totalNetWorth + result.netWorthContribution,
+        monthlyInvestments: acc.monthlyInvestments + result.monthlyInvestment,
         monthlyPayments: acc.monthlyPayments + result.monthlyPayment,
         monthlyWithdrawals: acc.monthlyWithdrawals + result.monthlyWithdrawal,
       };
     },
-    { totalNetWorth: 0, monthlyPayments: 0, monthlyWithdrawals: 0 }
+    { totalNetWorth: 0, monthlyInvestments: 0, monthlyPayments: 0, monthlyWithdrawals: 0 }
   );
 }
