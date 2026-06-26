@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -106,6 +107,7 @@ function App() {
             <Route path="/custom-inflation" element={<CustomInflationCalculator />} />
             </Routes>
             <SpeedInsights />
+            <Analytics />
           </BrowserRouter>
         </SettingsProvider>
       </AuthProvider>
