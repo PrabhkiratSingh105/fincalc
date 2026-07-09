@@ -2,12 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import { downloadPdfReport } from "../utils/pdfExport";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "./AuthModal";
-import {
-  deleteConfig as deleteLocalConfig,
-  listConfigs as listLocalConfigs,
-  saveConfig as saveLocalConfig,
-  updateConfig as updateLocalConfig,
-} from "../utils/savedConfigs";
 import { API } from "../config";
 
 function formatDate(iso) {
@@ -41,7 +35,6 @@ export default function SavedConfigsPanel({
   const [shareUrl, setShareUrl] = useState('');
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [mode, setMode] = useState("view"); // 'view' or 'save'
-  const [usingLocalStore, setUsingLocalStore] = useState(false);
 
   const readErrorMessage = async (response, fallback) => {
     const data = await response.json().catch(() => ({}));
@@ -50,8 +43,7 @@ export default function SavedConfigsPanel({
 
   const refresh = useCallback(async () => {
     if (!user || !token) {
-      setUsingLocalStore(true);
-      setConfigs(listLocalConfigs(storageKey));
+      setConfigs([]);
       return;
     }
 
@@ -66,12 +58,10 @@ export default function SavedConfigsPanel({
       }
 
       const data = await response.json();
-      setUsingLocalStore(false);
       setConfigs(data.configs || []);
     } catch (err) {
-      setUsingLocalStore(true);
-      setConfigs(listLocalConfigs(storageKey));
-      showError("Server configs are unavailable, so local browser configs are shown.");
+      setConfigs([]);
+      showError(err.message || "Server configs are unavailable.");
     } finally {
       setLoading(false);
     }
@@ -101,12 +91,9 @@ export default function SavedConfigsPanel({
     try {
       setLoading(true);
       const configData = getConfig();
-      if (!user || !token || usingLocalStore) {
-        saveLocalConfig(storageKey, newName, configData);
-        setNewName("");
-        setConfigs(listLocalConfigs(storageKey));
-        setUsingLocalStore(true);
-        showSuccess("Configuration saved locally.");
+      if (!user || !token) {
+        setAuthModalOpen(true);
+        showError("Log in to save configurations to Supabase.");
         return;
       }
 
@@ -130,15 +117,7 @@ export default function SavedConfigsPanel({
       await refresh();
       showSuccess("Configuration saved.");
     } catch (err) {
-      try {
-        saveLocalConfig(storageKey, newName, getConfig());
-        setNewName("");
-        setConfigs(listLocalConfigs(storageKey));
-        setUsingLocalStore(true);
-        showSuccess("Configuration saved locally because server save failed.");
-      } catch (localErr) {
-        showError(localErr.message || err.message);
-      }
+      showError(err.message || "Failed to save configuration.");
     } finally {
       setLoading(false);
     }
@@ -153,10 +132,9 @@ export default function SavedConfigsPanel({
   const handleUpdate = async (entry) => {
     try {
       setLoading(true);
-      if (!user || !token || usingLocalStore) {
-        updateLocalConfig(storageKey, entry.id, { config: getConfig() });
-        setConfigs(listLocalConfigs(storageKey));
-        showSuccess(`Updated "${entry.name}" locally.`);
+      if (!user || !token) {
+        setAuthModalOpen(true);
+        showError("Log in to update configurations in Supabase.");
         return;
       }
 
@@ -198,11 +176,9 @@ export default function SavedConfigsPanel({
   const handleRename = async (entry) => {
     try {
       setLoading(true);
-      if (!user || !token || usingLocalStore) {
-        updateLocalConfig(storageKey, entry.id, { name: editingName });
-        cancelRename();
-        setConfigs(listLocalConfigs(storageKey));
-        showSuccess("Configuration renamed locally.");
+      if (!user || !token) {
+        setAuthModalOpen(true);
+        showError("Log in to rename configurations in Supabase.");
         return;
       }
 
@@ -234,14 +210,9 @@ export default function SavedConfigsPanel({
   const handleDelete = async (entry) => {
     try {
       setLoading(true);
-      if (!user || !token || usingLocalStore) {
-        deleteLocalConfig(storageKey, entry.id);
-        setPendingDeleteId(null);
-        if (editingId === entry.id) {
-          cancelRename();
-        }
-        setConfigs(listLocalConfigs(storageKey));
-        showSuccess(`Deleted "${entry.name}" locally.`);
+      if (!user || !token) {
+        setAuthModalOpen(true);
+        showError("Log in to delete configurations from Supabase.");
         return;
       }
 
@@ -323,7 +294,6 @@ export default function SavedConfigsPanel({
           onClick={() => {
             setNewName("");
             setMode('save');
-            setUsingLocalStore(!user || !token);
             setOpen(true);
           }}
           disabled={authLoading}
@@ -336,7 +306,6 @@ export default function SavedConfigsPanel({
           className="mini-btn"
           onClick={() => {
             setMode('view');
-            setUsingLocalStore(!user || !token);
             setOpen(true);
           }}
           disabled={authLoading}
@@ -406,7 +375,7 @@ export default function SavedConfigsPanel({
             <div>
               <h2 id="saved-config-title">Saved configurations</h2>
               <p>
-                {pageLabel} - {usingLocalStore ? "local browser configs" : user ? `for ${user.username}` : "local browser configs"}
+                {pageLabel} - {user ? `for ${user.username}` : "login required"}
               </p>
             </div>
             <button
@@ -419,7 +388,7 @@ export default function SavedConfigsPanel({
             </button>
           </div>
 
-          {!user && !usingLocalStore ? (
+          {!user ? (
             <div className="saved-config-alert error">
               You must be logged in to save or load configurations.{" "}
               <button

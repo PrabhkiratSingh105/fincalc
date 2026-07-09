@@ -1,18 +1,21 @@
 const crypto = require('crypto');
 const fs = require('fs');
-const fsp = require('fs/promises');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
 
 loadEnv();
 
 const app = express();
 app.use(cors());
 const PORT = process.env.PORT || 3000;
-const USERS_FILE = path.join(__dirname, 'users.json');
-const PUBLIC_CONFIGS_FILE = path.join(__dirname, 'public-configs.json');
 const MAX_HISTORY_ITEMS = 50;
+const PLACEHOLDER_VALUES = new Set([
+  '',
+  'your_supabase_service_role_secret_jwt_here',
+  'your_supabase_url_here',
+]);
 const VALID_PUBLIC_PAGES = new Set([
   'sip',
   'lumpsum',
@@ -30,11 +33,31 @@ const VALID_PUBLIC_PAGES = new Set([
   'rd',
 ]);
 
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+function requireEnv(name, value) {
+  if (!value || PLACEHOLDER_VALUES.has(String(value).trim())) {
+    throw new Error(`${name} is required. Configure it with your Supabase project value before starting the backend.`);
+  }
+  return value;
+}
+
+const supabase = createClient(
+  requireEnv('SUPABASE_URL or PUBLIC_SUPABASE_URL', SUPABASE_URL),
+  requireEnv('SUPABASE_SERVICE_ROLE_KEY', SUPABASE_SERVICE_ROLE_KEY),
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  }
+);
+
 app.use(express.json({ limit: '20kb' }));
 
 const BUILD_DIR = path.join(__dirname, 'build');
 const BUILD_INDEX = path.join(BUILD_DIR, 'index.html');
-const FALLBACK_INDEX = path.join(__dirname, 'main.html');
 
 function hasReactBuild() {
   return fs.existsSync(BUILD_INDEX);
@@ -42,7 +65,6 @@ function hasReactBuild() {
 
 function resolveIndexHtml() {
   if (hasReactBuild()) return BUILD_INDEX;
-  if (fs.existsSync(FALLBACK_INDEX)) return FALLBACK_INDEX;
   return path.join(__dirname, 'public', 'index.html');
 }
 
@@ -100,42 +122,45 @@ function verifyPassword(password, user) {
   }
 }
 
-function stripByteOrderMark(value) {
-  return typeof value === 'string' ? value.replace(/^\uFEFF/, '') : value;
-}
-
-async function readJsonFile(filePath, fallbackFactory) {
-  try {
-    const raw = stripByteOrderMark(await fsp.readFile(filePath, 'utf8')).trim();
-    if (!raw) return fallbackFactory();
-    return JSON.parse(raw);
-  } catch (err) {
-    if (err.code === 'ENOENT') return fallbackFactory();
-    err.message = `Could not parse ${path.basename(filePath)}: ${err.message}`;
-    throw err;
-  }
-}
-
 function asyncHandler(handler) {
   return (req, res, next) => {
     Promise.resolve(handler(req, res, next)).catch(next);
   };
 }
 
-async function readUsers() {
-  return readJsonFile(USERS_FILE, () => []);
+function throwSupabaseError(error) {
+  if (error) throw error;
 }
 
-async function writeUsers(users) {
-  await fsp.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
+async function getUserByUsername(username) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('username', username)
+    .maybeSingle();
+  throwSupabaseError(error);
+  return data;
 }
 
-async function readPublicConfigs() {
-  return readJsonFile(PUBLIC_CONFIGS_FILE, () => []);
+async function updateUser(username, values) {
+  const { data, error } = await supabase
+    .from('users')
+    .update(values)
+    .eq('username', username)
+    .select('*')
+    .single();
+  throwSupabaseError(error);
+  return data;
 }
 
-async function writePublicConfigs(configs) {
-  await fsp.writeFile(PUBLIC_CONFIGS_FILE, JSON.stringify(configs, null, 2));
+async function getPublicConfigsForPage(page) {
+  const { data, error } = await supabase
+    .from('public_configs')
+    .select('*')
+    .eq('page', page)
+    .order('createdAt', { ascending: false });
+  throwSupabaseError(error);
+  return data || [];
 }
 
 function normalizePublicConfig(input) {
@@ -210,10 +235,14 @@ async function getAuthUser(req) {
   if (!match) return null;
 
   const tokenHash = hashToken(match[1]);
-  const users = await readUsers();
-  const user = users.find((item) => item.sessionHash === tokenHash);
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('sessionHash', tokenHash)
+    .maybeSingle();
+  throwSupabaseError(error);
   if (!user) return null;
-  return { user, users };
+  return { user };
 }
 
 async function requireAuth(req, res, next) {
@@ -305,8 +334,7 @@ app.post('/api/auth/signup', async (req, res) => {
     }
     if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters.' });
 
-    const users = await readUsers();
-    const user = users.find((item) => item.username === username);
+    const user = await getUserByUsername(username);
 
     if (user) return res.status(409).json({ message: 'Username already exists. Please login.' });
     const { salt, hash } = hashPassword(password);
@@ -320,9 +348,13 @@ app.post('/api/auth/signup', async (req, res) => {
       createdAt: new Date().toISOString()
     };
     const token = createSession(newUser);
-    users.push(newUser);
-    await writeUsers(users);
-    res.json({ user: publicUser(newUser), token });
+    const { data: createdUser, error } = await supabase
+      .from('users')
+      .insert(newUser)
+      .select('*')
+      .single();
+    throwSupabaseError(error);
+    res.json({ user: publicUser(createdUser), token });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Could not create account.' });
   }
@@ -336,15 +368,17 @@ app.post('/api/auth/login', asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Enter a valid username with no spaces.' });
   }
 
-  const users = await readUsers();
-  const user = users.find((item) => item.username === username);
+  const user = await getUserByUsername(username);
   if (!user || !verifyPassword(password, user)) {
     return res.status(401).json({ message: 'Invalid username or password.' });
   }
 
   const token = createSession(user);
-  await writeUsers(users);
-  res.json({ user: publicUser(user), token });
+  const updatedUser = await updateUser(username, {
+    sessionHash: user.sessionHash,
+    sessionCreatedAt: user.sessionCreatedAt,
+  });
+  res.json({ user: publicUser(updatedUser), token });
 }));
 
 app.get('/api/auth/me', requireAuth, (req, res) => {
@@ -352,21 +386,22 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 });
 
 app.post('/api/auth/logout', requireAuth, asyncHandler(async (req, res) => {
-  delete req.auth.user.sessionHash;
-  delete req.auth.user.sessionCreatedAt;
-  await writeUsers(req.auth.users);
+  await updateUser(req.auth.user.username, {
+    sessionHash: null,
+    sessionCreatedAt: null,
+  });
   res.json({ ok: true });
 }));
 
 app.get('/api/settings', requireAuth, asyncHandler(async (req, res) => {
   req.auth.user.settings = normalizeSettings(req.auth.user.settings);
-  await writeUsers(req.auth.users);
+  await updateUser(req.auth.user.username, { settings: req.auth.user.settings });
   res.json({ settings: req.auth.user.settings });
 }));
 
 app.put('/api/settings', requireAuth, asyncHandler(async (req, res) => {
   req.auth.user.settings = normalizeSettings(req.body.settings);
-  await writeUsers(req.auth.users);
+  await updateUser(req.auth.user.username, { settings: req.auth.user.settings });
   res.json({ settings: req.auth.user.settings });
 }));
 
@@ -376,9 +411,9 @@ app.post('/api/public-portfolios', requireAuth, asyncHandler(async (req, res) =>
     return res.status(400).json({ message: 'Portfolio data is incomplete.' });
   }
 
-  const configs = await readPublicConfigs();
   const username = req.auth.user.username;
   const page = 'portfolio';
+  const configs = await getPublicConfigsForPage(page);
   const preferredSlug = slugify(req.body.portfolio?.publicSlug || portfolio.name);
   const slug = resolvePortfolioSlug(configs, page, preferredSlug, username, portfolio.id);
   const existingEntry = configs.find((item) => item.page === page && item.slug === slug && item.username === username);
@@ -391,15 +426,25 @@ app.post('/api/public-portfolios', requireAuth, asyncHandler(async (req, res) =>
   };
 
   if (existingEntry) {
-    existingEntry.username = username;
-    existingEntry.portfolio = portfolio;
-    existingEntry.updatedAt = entry.updatedAt;
+    const { error } = await supabase
+      .from('public_configs')
+      .update({
+        username,
+        portfolio,
+        updatedAt: entry.updatedAt,
+      })
+      .eq('page', page)
+      .eq('slug', slug)
+      .eq('username', username);
+    throwSupabaseError(error);
   } else {
     entry.createdAt = new Date().toISOString();
-    configs.unshift(entry);
+    const { error } = await supabase
+      .from('public_configs')
+      .insert(entry);
+    throwSupabaseError(error);
   }
 
-  await writePublicConfigs(configs.slice(0, 500));
   res.status(201).json({
     slug,
     url: `${req.protocol}://${req.get('host')}/portfolio/${encodeURIComponent(slug)}`,
@@ -409,8 +454,13 @@ app.post('/api/public-portfolios', requireAuth, asyncHandler(async (req, res) =>
 
 app.get('/api/public-portfolios/:slug', asyncHandler(async (req, res) => {
   const slug = slugify(req.params.slug);
-  const configs = await readPublicConfigs();
-  const entry = configs.find((item) => item.page === 'portfolio' && item.slug === slug);
+  const { data: entry, error } = await supabase
+    .from('public_configs')
+    .select('*')
+    .eq('page', 'portfolio')
+    .eq('slug', slug)
+    .maybeSingle();
+  throwSupabaseError(error);
   if (!entry?.portfolio) return res.status(404).json({ message: 'Public portfolio not found.' });
 
   res.json({
@@ -450,13 +500,13 @@ app.post('/api/history', requireAuth, asyncHandler(async (req, res) => {
   };
 
   req.auth.user.history = [entry, ...(req.auth.user.history || [])].slice(0, MAX_HISTORY_ITEMS);
-  await writeUsers(req.auth.users);
+  await updateUser(req.auth.user.username, { history: req.auth.user.history });
   res.status(201).json({ history: req.auth.user.history });
 }));
 
 app.delete('/api/history/:id', requireAuth, asyncHandler(async (req, res) => {
   req.auth.user.history = (req.auth.user.history || []).filter((item) => item.id !== req.params.id);
-  await writeUsers(req.auth.users);
+  await updateUser(req.auth.user.username, { history: req.auth.user.history });
   res.json({ history: req.auth.user.history });
 }));
 
@@ -501,7 +551,7 @@ app.post('/api/configs/:page', requireAuth, async (req, res) => {
     };
 
     req.auth.user.configs[page].unshift(configEntry);
-    await writeUsers(req.auth.users);
+    await updateUser(req.auth.user.username, { configs: req.auth.user.configs });
     res.status(201).json({ config: configEntry });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Could not save configuration.' });
@@ -536,7 +586,7 @@ app.put('/api/configs/:page/:id', requireAuth, async (req, res) => {
     }
     configEntry.updatedAt = new Date().toISOString();
 
-    await writeUsers(req.auth.users);
+    await updateUser(req.auth.user.username, { configs: req.auth.user.configs });
     res.json({ config: configEntry });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Could not update configuration.' });
@@ -557,7 +607,7 @@ app.delete('/api/configs/:page/:id', requireAuth, async (req, res) => {
     }
 
     req.auth.user.configs[page] = req.auth.user.configs[page].filter((c) => c.id !== id);
-    await writeUsers(req.auth.users);
+    await updateUser(req.auth.user.username, { configs: req.auth.user.configs });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Could not delete configuration.' });
@@ -580,18 +630,28 @@ app.post('/api/public-configs', requireAuth, async (req, res) => {
       return res.status(400).json({ message: 'Configuration data is incomplete.' });
     }
 
-    const configs = await readPublicConfigs();
     const username = req.auth.user.username;
-    
-    // Check if a config with this name already exists for this user and page
-    const existingEntry = configs.find(
-      (item) => item.page === page && item.username === username && item.configName === configName
-    );
+    const { data: existingEntry, error: selectError } = await supabase
+      .from('public_configs')
+      .select('*')
+      .eq('page', page)
+      .eq('username', username)
+      .eq('configName', configName)
+      .maybeSingle();
+    throwSupabaseError(selectError);
     
     if (existingEntry) {
       // Update existing entry
-      existingEntry.config = config;
-      existingEntry.updatedAt = new Date().toISOString();
+      const { error } = await supabase
+        .from('public_configs')
+        .update({
+          config,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('page', page)
+        .eq('username', username)
+        .eq('configName', configName);
+      throwSupabaseError(error);
     } else {
       // Create new entry
       const entry = {
@@ -602,10 +662,11 @@ app.post('/api/public-configs', requireAuth, async (req, res) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      configs.unshift(entry);
+      const { error } = await supabase
+        .from('public_configs')
+        .insert(entry);
+      throwSupabaseError(error);
     }
-    
-    await writePublicConfigs(configs.slice(0, 500));
 
     res.status(201).json({
       url: `${req.protocol}://${req.get('host')}/${page}/${username}/config/${encodeURIComponent(configName)}`,
@@ -625,10 +686,14 @@ app.get('/api/public-configs/:page/:username/:configName', async (req, res) => {
       return res.status(404).json({ message: 'Shared configuration not found.' });
     }
 
-    const configs = await readPublicConfigs();
-    const entry = configs.find(
-      (item) => item.page === page && item.username === username && item.configName === configName
-    );
+    const { data: entry, error } = await supabase
+      .from('public_configs')
+      .select('*')
+      .eq('page', page)
+      .eq('username', username)
+      .eq('configName', configName)
+      .maybeSingle();
+    throwSupabaseError(error);
     if (!entry) return res.status(404).json({ message: 'Shared configuration not found.' });
 
     res.json({
@@ -655,7 +720,7 @@ app.use((err, req, res, next) => {
   return res.status(500).send('Internal server error.');
 });
 
-// SPA fallback: React build, or standalone main.html when not built yet
+// SPA fallback: React build, or the React public shell when not built yet.
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
   res.sendFile(resolveIndexHtml(), (err) => {
@@ -664,9 +729,9 @@ app.get('*', (req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  const mode = hasReactBuild() ? 'React build' : 'standalone (main.html)';
+  const mode = hasReactBuild() ? 'React build' : 'React public shell';
   console.log(`FinCalc is running at http://localhost:${PORT} [${mode}]`);
   if (!hasReactBuild()) {
-    console.log('Tip: run "npm run build" for the React app, or "npm run dev" during development.');
+    console.log('Tip: run "npm run build" for production, or "npm run dev" during development.');
   }
 });

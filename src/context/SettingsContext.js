@@ -3,7 +3,6 @@ import { useAuth } from './AuthContext';
 import { parseApiResponse } from '../utils/api';
 import { API } from "../config";
 
-const SETTINGS_STORAGE_KEY = 'fincalc:settings';
 const DEFAULT_SETTINGS = {
   defaultInflationRate: 6,
   customInflationRows: [
@@ -82,18 +81,9 @@ function normalizeSettings(input) {
   };
 }
 
-function readLocalSettings() {
-  try {
-    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    return normalizeSettings(raw ? JSON.parse(raw) : DEFAULT_SETTINGS);
-  } catch {
-    return normalizeSettings(DEFAULT_SETTINGS);
-  }
-}
-
 export function SettingsProvider({ children }) {
   const { user, token } = useAuth();
-  const [settings, setSettings] = useState(() => readLocalSettings());
+  const [settings, setSettings] = useState(() => normalizeSettings(DEFAULT_SETTINGS));
   const [loading, setLoading] = useState(true);
   const [sourceReady, setSourceReady] = useState(false);
   const lastSavedRef = useRef(JSON.stringify(settings));
@@ -105,10 +95,10 @@ export function SettingsProvider({ children }) {
       setLoading(true);
 
       if (!user || !token) {
-        const local = readLocalSettings();
+        const defaults = normalizeSettings(DEFAULT_SETTINGS);
         if (!alive) return;
-        setSettings(local);
-        lastSavedRef.current = JSON.stringify(local);
+        setSettings(defaults);
+        lastSavedRef.current = JSON.stringify(defaults);
         setSourceReady(true);
         setLoading(false);
         return;
@@ -122,14 +112,12 @@ export function SettingsProvider({ children }) {
         const normalized = normalizeSettings(data?.settings);
         if (!alive) return;
         setSettings(normalized);
-        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(normalized));
         lastSavedRef.current = JSON.stringify(normalized);
       } catch (error) {
         console.error('Failed to load settings:', error);
-        const local = readLocalSettings();
         if (!alive) return;
-        setSettings(local);
-        lastSavedRef.current = JSON.stringify(local);
+        setSettings(normalizeSettings(DEFAULT_SETTINGS));
+        lastSavedRef.current = JSON.stringify(normalizeSettings(DEFAULT_SETTINGS));
       } finally {
         if (alive) {
           setSourceReady(true);
@@ -153,8 +141,6 @@ export function SettingsProvider({ children }) {
     if (serialized === lastSavedRef.current) return;
 
     const timer = setTimeout(async () => {
-      localStorage.setItem(SETTINGS_STORAGE_KEY, serialized);
-
       if (user && token) {
         try {
           const response = await fetch(`${API}/api/settings`, {
@@ -166,12 +152,11 @@ export function SettingsProvider({ children }) {
             body: JSON.stringify({ settings }),
           });
           await parseApiResponse(response, 'Could not save settings.');
+          lastSavedRef.current = serialized;
         } catch (error) {
           console.error('Failed to persist settings:', error);
         }
       }
-
-      lastSavedRef.current = serialized;
     }, 350);
 
     return () => clearTimeout(timer);

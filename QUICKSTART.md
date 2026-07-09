@@ -14,7 +14,7 @@ npm start
 
 Open your browser and go to **http://localhost:3000**
 
-If you have not built the React app yet, the server automatically serves the full **main.html** app (no white screen).
+For local React development, use `npm run dev`. For `npm start`, build the React app first with `npm run build`.
 
 ## Step 3 (optional): Build the React App
 
@@ -105,7 +105,7 @@ npm start -- --port 3001
 ```
 
 **White screen or blank page?**
-- Use `npm start` (serves `main.html` until you run `npm run build`)
+- Run `npm run build`, then `npm start` for the production server
 - For React development, use `npm run dev` and open **http://localhost:3000** (not 3001)
 - Clear browser cache (Ctrl+Shift+Delete)
 

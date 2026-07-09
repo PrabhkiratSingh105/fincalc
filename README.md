@@ -47,8 +47,10 @@ FinCalc/
 ├── build/                      # Built React app (generated)
 ├── server.js                   # Express backend server
 ├── package.json
-└── users.json                  # User data (generated)
 ```
+
+Data persistence is handled by Supabase Postgres, not local JSON files or MongoDB.
+Use `supabase-schema.sql` to create or verify the required Supabase tables.
 
 ## Setup Instructions
 
@@ -117,8 +119,8 @@ This runs both the Express server and React development server concurrently.
 
 ### Backend
 - **Express.js** - HTTP server
+- **Supabase Postgres** - User data, settings, saved configs, public configs, and portfolio links
 - **Node.js crypto** - Password hashing (PBKDF2)
-- **File system** - Data persistence
 
 ## Features
 

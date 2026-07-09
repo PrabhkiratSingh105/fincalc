@@ -4,7 +4,6 @@ import ChartPanel from '../components/calculator/ChartPanel';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { parseApiResponse } from '../utils/api';
-import { listConfigs as listLocalConfigs } from '../utils/savedConfigs';
 import {
   PORTFOLIO_TYPE_OPTIONS,
   PORTFOLIO_TYPE_TO_PAGE,
@@ -100,7 +99,7 @@ export default function PortfolioDetailsPage() {
       const entries = await Promise.all(
         Object.entries(PORTFOLIO_TYPE_TO_PAGE).map(async ([type, pageKey]) => {
           if (!user || !token) {
-            return [type, listLocalConfigs(pageKey)];
+            return [type, []];
           }
 
           try {
@@ -110,7 +109,7 @@ export default function PortfolioDetailsPage() {
             const data = await parseApiResponse(response, `Could not load ${pageKey} configs.`);
             return [type, data?.configs || []];
           } catch {
-            return [type, listLocalConfigs(pageKey)];
+            return [type, []];
           }
         })
       );
