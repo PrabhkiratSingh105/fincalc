@@ -730,7 +730,7 @@ app.get('*', (req, res, next) => {
 
 app.listen(PORT, () => {
   const mode = hasReactBuild() ? 'React build' : 'React public shell';
-  console.log(`FinCalc is running at http://localhost:${PORT} [${mode}]`);
+  console.log(`PlanMyCapital is running at http://localhost:${PORT} [${mode}]`);
   if (!hasReactBuild()) {
     console.log('Tip: run "npm run build" for production, or "npm run dev" during development.');
   }

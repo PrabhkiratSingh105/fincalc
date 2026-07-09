@@ -4,21 +4,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>FinCalc - SIP, SWP and Lumpsum Calculator with Tax and Inflation</title>
+  <title>PlanMyCapital</title>
   <meta name="description"
-    content="Use FinCalc to calculate SIP, step-up SIP, SWP and lumpsum mutual fund returns with tax, inflation-adjusted value, charts and real purchasing power estimates.">
+    content="Use PlanMyCapital to calculate SIP, step-up SIP, SWP and lumpsum mutual fund returns with tax, inflation-adjusted value, charts and real purchasing power estimates.">
   <meta name="keywords"
     content="SIP calculator, SWP calculator, lumpsum calculator, mutual fund calculator, inflation adjusted returns, post tax returns India">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://fincalc.example.com/">
-  <meta property="og:title" content="FinCalc - SIP, SWP and Lumpsum Calculator">
+  <link rel="canonical" href="https://planmycapital.com/">
+  <meta property="og:title" content="PlanMyCapital - SIP, SWP and Lumpsum Calculator">
   <meta property="og:description"
     content="Calculate mutual fund returns after tax and inflation with clear charts for SIP, SWP and lumpsum investments.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="en_IN">
   <meta name="twitter:card" content="summary">
   <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"FinCalc","applicationCategory":"FinanceApplication","operatingSystem":"Any","description":"SIP, SWP and lumpsum mutual fund calculator with tax and inflation-adjusted results for Indian investors.","offers":{"@type":"Offer","price":"0","priceCurrency":"INR"}}
+{"@context":"https://schema.org","@type":"WebApplication","name":"PlanMyCapital","applicationCategory":"FinanceApplication","operatingSystem":"Any","description":"SIP, SWP and lumpsum mutual fund calculator with tax and inflation-adjusted results for Indian investors.","offers":{"@type":"Offer","price":"0","priceCurrency":"INR"}}
 </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -1046,7 +1046,7 @@
     <div class="auth-modal">
       <div class="auth-head">
         <div>
-          <h2 id="authTitle">Login to FinCalc</h2>
+          <h2 id="authTitle">Login to PlanMyCapital</h2>
           <p id="authSub">Use a username with no spaces and your password.</p>
         </div>
         <button class="icon-btn" onclick="closeAuth()" aria-label="Close login"><span
@@ -1682,7 +1682,7 @@
       g('loginTab').classList.toggle('active', mode === 'login');
       g('signupTab').classList.toggle('active', mode === 'signup');
       g('confirmField').classList.toggle('hidden', mode !== 'signup');
-      g('authTitle').textContent = mode === 'login' ? 'Login to FinCalc' : 'Create your FinCalc account';
+      g('authTitle').textContent = mode === 'login' ? 'Login to PlanMyCapital' : 'Create your PlanMyCapital account';
       g('authSub').textContent = 'Use a username with no spaces and your password.';
       g('authPass').setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
       setAuthMessage('');

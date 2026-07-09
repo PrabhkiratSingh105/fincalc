@@ -66,11 +66,11 @@ export default function AuthModal({ isOpen, onClose }) {
       <div className="auth-modal">
         <div className="auth-head">
           <div>
-            <h2>{mode === 'login' ? 'Login to FinCalc' : 'Create Account'}</h2>
+            <h2>{mode === 'login' ? 'Login to PlanMyCapital' : 'Create Account'}</h2>
             <p>
               {mode === 'login'
                 ? 'Use a username with no spaces and your password.'
-                : 'Sign up for a new FinCalc account to save your calculations.'}
+                : 'Sign up for a new PlanMyCapital account to save your calculations.'}
             </p>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close login">
@@ -99,7 +99,7 @@ export default function AuthModal({ isOpen, onClose }) {
             <input
               id="authUsername"
               type="text"
-              placeholder="username_without_spaces"
+              placeholder="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"

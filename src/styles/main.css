@@ -145,19 +145,19 @@ header {
 }
 
 .logo-box {
-  width: 33px;
+  width: 37px;
   height: 33px;
-  background: var(--gradient-brand);
-  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--sh-color);
+  overflow: hidden;
 }
 
-.logo-box span {
-  color: #fff;
-  font-size: 19px;
+.logo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .logo-name em {

@@ -5,7 +5,7 @@ const ThemeContext = createContext(null);
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem('fincalc:theme') || 'light';
+      return localStorage.getItem('PlanMyCapital:theme') || 'light';
     } catch {
       return 'light';
     }
@@ -14,7 +14,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     try {
-      localStorage.setItem('fincalc:theme', theme);
+      localStorage.setItem('PlanMyCapital:theme', theme);
     } catch {
       /* ignore */
     }

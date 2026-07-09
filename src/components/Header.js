@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import logo from '../assets/logo.png';
 
 const NAV = [
   {
@@ -75,10 +76,10 @@ export default function Header({ setShowAuthModal }) {
       <div className="h-inner">
         <Link to="/" className="logo">
           <div className="logo-box">
-            <span className="material-symbols-rounded">show_chart</span>
+            <img src={logo} alt="PlanMyCapital logo" />
           </div>
           <span className="logo-name">
-            Fin<em>Calc</em>
+            PlanMy<em>Capital</em>
           </span>
         </Link>
 

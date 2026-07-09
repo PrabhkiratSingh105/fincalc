@@ -1,4 +1,4 @@
-# FinCalc - Quick Start Guide
+# PlanMyCapital - Quick Start Guide
 
 ## Step 1: Install Dependencies
 

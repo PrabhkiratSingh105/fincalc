@@ -1,7 +1,7 @@
 {
-  "name": "fincalc",
+  "name": "PlanMyCapital",
   "version": "1.0.0",
-  "description": "FinCalc investment calculator with username and password login.",
+  "description": "PlanMyCapital investment calculator with username and password login.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

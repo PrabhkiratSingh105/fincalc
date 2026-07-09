@@ -1,4 +1,4 @@
-# FinCalc - Investment Calculator
+# PlanMyCapital - Investment Calculator
 
 A modern, multipage React application for calculating SIP (Systematic Investment Plan), SWP (Systematic Withdrawal Plan), and Lumpsum investment returns with tax and inflation adjustments.
 
