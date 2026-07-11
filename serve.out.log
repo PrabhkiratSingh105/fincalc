@@ -79,3 +79,353 @@
 [web] Compiling...
 [web] Compiled successfully!
 [web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Failed to compile.
+[web] 
+[web] SyntaxError: C:\Users\Dell\Documents\FinCalc\src\pages\PortfolioDetailsPage.jsx: Unexpected token (327:26)
+[web] [0m [90m 325 |[39m                           [33m<[39m[33m/[39m[33mselect[39m[33m>[39m
+[web]  [90m 326 |[39m                         [33m<[39m[33m/[39m
+[web] [31m[1m>[22m[39m[90m 327 |[39m                           [33m<[39m[33mlabel[39m className[33m=[39m[32m"portfolio-start-year-field"[39m[33m>[39m                  
+[web]  [90m     |[39m                           [31m[1m^[22m[39m
+[web]  [90m 328 |[39m                             [33m<[39m[33mStartYearInput[39m
+[web]  [90m 329 |[39m                               value[33m=[39m{item[33m.[39mstartYear}
+[web]  [90m 330 |[39m                               disabled[33m=[39m{[33m![39mcanEdit}[0m
+[web] [1m[31mERROR[39m[22m in [1m./src/pages/PortfolioDetailsPage.jsx[39m[22m
+[web] Module build failed (from ./node_modules/babel-loader/lib/index.js):
+[web] SyntaxError: C:\Users\Dell\Documents\FinCalc\src\pages\PortfolioDetailsPage.jsx: Unexpected token (327:26)
+[web] 
+[web] [0m [90m 325 |[39m                           [33m<[39m[33m/[39m[33mselect[39m[33m>[39m
+[web]  [90m 326 |[39m                         [33m<[39m[33m/[39m
+[web] [31m[1m>[22m[39m[90m 327 |[39m                           [33m<[39m[33mlabel[39m className[33m=[39m[32m"portfolio-start-year-field"[39m[33m>[39m                  
+[web]  [90m     |[39m                           [31m[1m^[22m[39m
+[web]  [90m 328 |[39m                             [33m<[39m[33mStartYearInput[39m
+[web]  [90m 329 |[39m                               value[33m=[39m{item[33m.[39mstartYear}
+[web]  [90m 330 |[39m                               disabled[33m=[39m{[33m![39mcanEdit}[0m
+[web]     at constructor (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:365:19)
+[web]     at FlowParserMixin.raise (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:6616:19)
+[web]     at FlowParserMixin.unexpected (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:6636:16)
+[web]     at FlowParserMixin.jsxParseIdentifier (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4581:12)
+[web]     at FlowParserMixin.jsxParseNamespacedName (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4588:23)
+[web]     at FlowParserMixin.jsxParseElementName (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4597:21)
+[web]     at FlowParserMixin.jsxParseClosingElementAt (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4691:22)
+[web]     at FlowParserMixin.jsxParseElementAt (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4707:37)
+[web]     at FlowParserMixin.jsxParseElementAt (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4710:32)
+[web]     at FlowParserMixin.jsxParseElement (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4761:17)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4771:19)
+[web]     at FlowParserMixin.parseExprSubscripts (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11098:23)
+[web]     at FlowParserMixin.parseUpdate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11083:21)
+[web]     at FlowParserMixin.parseMaybeUnary (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11063:23)
+[web]     at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10916:61)
+[web]     at FlowParserMixin.parseExprOps (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10921:23)
+[web]     at FlowParserMixin.parseMaybeConditional (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10898:23)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10848:21)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3510:39
+[web]     at FlowParserMixin.tryParse (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:6924:20)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3510:18)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10817:39
+[web]     at FlowParserMixin.allowInAnd (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12443:12)
+[web]     at FlowParserMixin.parseMaybeAssignAllowIn (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10817:17)
+[web]     at FlowParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12510:17)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11692:28)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3603:18)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11348:23)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4776:20)
+[web]     at FlowParserMixin.parseExprSubscripts (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11098:23)
+[web]     at FlowParserMixin.parseUpdate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11083:21)
+[web]     at FlowParserMixin.parseMaybeUnary (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11063:23)
+[web]     at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10916:61)
+[web]     at FlowParserMixin.parseExprOps (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10921:23)
+[web]     at FlowParserMixin.parseMaybeConditional (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10898:23)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10848:21)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3561:18)
+[web]     at FlowParserMixin.parseExpressionBase (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10801:23)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10797:39
+[web]     at FlowParserMixin.allowInAnd (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12438:16)
+[web]     at FlowParserMixin.parseExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10797:17)
+[web]     at FlowParserMixin.parseReturnStatement (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13159:28)
+[web]     at FlowParserMixin.parseStatementContent (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12815:21)
+[web]     at FlowParserMixin.parseStatementLike (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12784:17)
+[web]     at FlowParserMixin.parseStatementLike (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:2930:24)
+[web]     at FlowParserMixin.parseStatementListItem (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12764:17)
+[web]     at FlowParserMixin.parseBlockOrModuleBlockBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13333:61)
+[web]     at FlowParserMixin.parseBlockBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13326:10)
+[web]     at FlowParserMixin.parseBlock (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13314:10)
+[web]     at FlowParserMixin.parseFunctionBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12117:24)
+[web] 
+[web] webpack compiled with [1m[31m1 error[39m[22m
+[web] Compiling...
+[web] Failed to compile.
+[web] 
+[web] [eslint] 
+[web] src\pages\PortfolioDetailsPage.jsx
+[web] Syntax error: Expected corresponding JSX closing tag for <tr>. (343:24) (343:24)
+[web] [1m[31mERROR[39m[22m in [1m./src/pages/PortfolioDetailsPage.jsx[39m[22m
+[web] Module build failed (from ./node_modules/babel-loader/lib/index.js):
+[web] SyntaxError: C:\Users\Dell\Documents\FinCalc\src\pages\PortfolioDetailsPage.jsx: Expected corresponding JSX closing tag for <tr>. (343:24)
+[web] 
+[web] [0m [90m 341 |[39m                             [33m/[39m[33m>[39m
+[web]  [90m 342 |[39m                           [33m<[39m[33m/[39m[33mlabel[39m[33m>[39m
+[web] [31m[1m>[22m[39m[90m 343 |[39m                         [33m<[39m[33m/[39m[33mtd[39m[33m>[39m
+[web]  [90m     |[39m                         [31m[1m^[22m[39m
+[web]  [90m 344 |[39m                         [33m<[39m[33mtd[39m[33m>[39m
+[web]  [90m 345 |[39m                           [33m<[39m[33mConfigSelect[39m
+[web]  [90m 346 |[39m                             type[33m=[39m{item[33m.[39mtype}[0m
+[web]     at constructor (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:365:19)
+[web]     at FlowParserMixin.raise (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:6616:19)
+[web]     at FlowParserMixin.jsxParseElementAt (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4739:16)
+[web]     at FlowParserMixin.jsxParseElement (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4761:17)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4771:19)
+[web]     at FlowParserMixin.parseExprSubscripts (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11098:23)
+[web]     at FlowParserMixin.parseUpdate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11083:21)
+[web]     at FlowParserMixin.parseMaybeUnary (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11063:23)
+[web]     at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10916:61)
+[web]     at FlowParserMixin.parseExprOps (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10921:23)
+[web]     at FlowParserMixin.parseMaybeConditional (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10898:23)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10848:21)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3510:39
+[web]     at FlowParserMixin.tryParse (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:6924:20)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3510:18)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10817:39
+[web]     at FlowParserMixin.allowInAnd (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12443:12)
+[web]     at FlowParserMixin.parseMaybeAssignAllowIn (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10817:17)
+[web]     at FlowParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12510:17)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11692:28)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3603:18)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11348:23)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4776:20)
+[web]     at FlowParserMixin.parseExprSubscripts (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11098:23)
+[web]     at FlowParserMixin.parseUpdate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11083:21)
+[web]     at FlowParserMixin.parseMaybeUnary (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11063:23)
+[web]     at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10916:61)
+[web]     at FlowParserMixin.parseExprOps (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10921:23)
+[web]     at FlowParserMixin.parseMaybeConditional (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10898:23)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10848:21)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3561:18)
+[web]     at FlowParserMixin.parseExpressionBase (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10801:23)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10797:39
+[web]     at FlowParserMixin.allowInAnd (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12438:16)
+[web]     at FlowParserMixin.parseExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10797:17)
+[web]     at FlowParserMixin.parseReturnStatement (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13159:28)
+[web]     at FlowParserMixin.parseStatementContent (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12815:21)
+[web]     at FlowParserMixin.parseStatementLike (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12784:17)
+[web]     at FlowParserMixin.parseStatementLike (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:2930:24)
+[web]     at FlowParserMixin.parseStatementListItem (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12764:17)
+[web]     at FlowParserMixin.parseBlockOrModuleBlockBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13333:61)
+[web]     at FlowParserMixin.parseBlockBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13326:10)
+[web]     at FlowParserMixin.parseBlock (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13314:10)
+[web]     at FlowParserMixin.parseFunctionBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12117:24)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:2904:63
+[web]     at FlowParserMixin.forwardNoArrowParamsConversionAt (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3080:16)
+[web]     at FlowParserMixin.parseFunctionBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:2904:12)
+[web]     at FlowParserMixin.parseArrowExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12092:10)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11704:12)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3603:18)
+[web] 
+[web] [1m[31mERROR[39m[22m in [1m[eslint] 
+[web] src\pages\PortfolioDetailsPage.jsx
+[web]   Line 343:24:  Parsing [1m[31merror[39m[22m[1m: Expected corresponding JSX closing tag for <tr>. (343:24)
+[web] 
+[web] [39m[22m
+[web] 
+[web] webpack compiled with [1m[31m2 errors[39m[22m
+[web] Compiling...
+[web] Failed to compile.
+[web] 
+[web] [eslint] 
+[web] src\pages\PortfolioDetailsPage.jsx
+[web] Syntax error: Expected corresponding JSX closing tag for <tr>. (343:24) (343:24)
+[web] [1m[31mERROR[39m[22m in [1m./src/pages/PortfolioDetailsPage.jsx[39m[22m
+[web] Module build failed (from ./node_modules/babel-loader/lib/index.js):
+[web] SyntaxError: C:\Users\Dell\Documents\FinCalc\src\pages\PortfolioDetailsPage.jsx: Expected corresponding JSX closing tag for <tr>. (343:24)
+[web] 
+[web] [0m [90m 341 |[39m                             [33m/[39m[33m>[39m
+[web]  [90m 342 |[39m                           [33m<[39m[33m/[39m[33mlabel[39m[33m>[39m
+[web] [31m[1m>[22m[39m[90m 343 |[39m                         [33m<[39m[33m/[39m[33mtd[39m[33m>[39m
+[web]  [90m     |[39m                         [31m[1m^[22m[39m
+[web]  [90m 344 |[39m                         [33m<[39m[33mtd[39m[33m>[39m
+[web]  [90m 345 |[39m                           [33m<[39m[33mConfigSelect[39m
+[web]  [90m 346 |[39m                             type[33m=[39m{item[33m.[39mtype}[0m
+[web]     at constructor (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:365:19)
+[web]     at FlowParserMixin.raise (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:6616:19)
+[web]     at FlowParserMixin.jsxParseElementAt (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4739:16)
+[web]     at FlowParserMixin.jsxParseElement (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4761:17)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4771:19)
+[web]     at FlowParserMixin.parseExprSubscripts (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11098:23)
+[web]     at FlowParserMixin.parseUpdate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11083:21)
+[web]     at FlowParserMixin.parseMaybeUnary (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11063:23)
+[web]     at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10916:61)
+[web]     at FlowParserMixin.parseExprOps (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10921:23)
+[web]     at FlowParserMixin.parseMaybeConditional (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10898:23)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10848:21)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3510:39
+[web]     at FlowParserMixin.tryParse (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:6924:20)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3510:18)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10817:39
+[web]     at FlowParserMixin.allowInAnd (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12443:12)
+[web]     at FlowParserMixin.parseMaybeAssignAllowIn (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10817:17)
+[web]     at FlowParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12510:17)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11692:28)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3603:18)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11348:23)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4776:20)
+[web]     at FlowParserMixin.parseExprSubscripts (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11098:23)
+[web]     at FlowParserMixin.parseUpdate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11083:21)
+[web]     at FlowParserMixin.parseMaybeUnary (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11063:23)
+[web]     at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10916:61)
+[web]     at FlowParserMixin.parseExprOps (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10921:23)
+[web]     at FlowParserMixin.parseMaybeConditional (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10898:23)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10848:21)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3561:18)
+[web]     at FlowParserMixin.parseExpressionBase (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10801:23)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10797:39
+[web]     at FlowParserMixin.allowInAnd (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12438:16)
+[web]     at FlowParserMixin.parseExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10797:17)
+[web]     at FlowParserMixin.parseReturnStatement (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13159:28)
+[web]     at FlowParserMixin.parseStatementContent (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12815:21)
+[web]     at FlowParserMixin.parseStatementLike (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12784:17)
+[web]     at FlowParserMixin.parseStatementLike (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:2930:24)
+[web]     at FlowParserMixin.parseStatementListItem (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12764:17)
+[web]     at FlowParserMixin.parseBlockOrModuleBlockBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13333:61)
+[web]     at FlowParserMixin.parseBlockBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13326:10)
+[web]     at FlowParserMixin.parseBlock (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13314:10)
+[web]     at FlowParserMixin.parseFunctionBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12117:24)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:2904:63
+[web]     at FlowParserMixin.forwardNoArrowParamsConversionAt (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3080:16)
+[web]     at FlowParserMixin.parseFunctionBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:2904:12)
+[web]     at FlowParserMixin.parseArrowExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12092:10)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11704:12)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3603:18)
+[web] 
+[web] [1m[31mERROR[39m[22m in [1m[eslint] 
+[web] src\pages\PortfolioDetailsPage.jsx
+[web]   Line 343:24:  Parsing [1m[31merror[39m[22m[1m: Expected corresponding JSX closing tag for <tr>. (343:24)
+[web] 
+[web] [39m[22m
+[web] 
+[web] webpack compiled with [1m[31m2 errors[39m[22m
+[web] Compiling...
+[web] Failed to compile.
+[web] 
+[web] [eslint] 
+[web] src\pages\PortfolioDetailsPage.jsx
+[web] Syntax error: Expected corresponding JSX closing tag for <tr>. (344:24) (344:24)
+[web] [1m[31mERROR[39m[22m in [1m./src/pages/PortfolioDetailsPage.jsx[39m[22m
+[web] Module build failed (from ./node_modules/babel-loader/lib/index.js):
+[web] SyntaxError: C:\Users\Dell\Documents\FinCalc\src\pages\PortfolioDetailsPage.jsx: Expected corresponding JSX closing tag for <tr>. (344:24)
+[web] 
+[web] [0m [90m 342 |[39m                             [33m/[39m[33m>[39m
+[web]  [90m 343 |[39m                           [33m<[39m[33m/[39m[33mlabel[39m[33m>[39m
+[web] [31m[1m>[22m[39m[90m 344 |[39m                         [33m<[39m[33m/[39m[33mtd[39m[33m>[39m
+[web]  [90m     |[39m                         [31m[1m^[22m[39m
+[web]  [90m 345 |[39m                         [33m<[39m[33mtd[39m[33m>[39m
+[web]  [90m 346 |[39m                           [33m<[39m[33mConfigSelect[39m
+[web]  [90m 347 |[39m                             type[33m=[39m{item[33m.[39mtype}[0m
+[web]     at constructor (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:365:19)
+[web]     at FlowParserMixin.raise (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:6616:19)
+[web]     at FlowParserMixin.jsxParseElementAt (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4739:16)
+[web]     at FlowParserMixin.jsxParseElement (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4761:17)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4771:19)
+[web]     at FlowParserMixin.parseExprSubscripts (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11098:23)
+[web]     at FlowParserMixin.parseUpdate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11083:21)
+[web]     at FlowParserMixin.parseMaybeUnary (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11063:23)
+[web]     at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10916:61)
+[web]     at FlowParserMixin.parseExprOps (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10921:23)
+[web]     at FlowParserMixin.parseMaybeConditional (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10898:23)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10848:21)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3510:39
+[web]     at FlowParserMixin.tryParse (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:6924:20)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3510:18)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10817:39
+[web]     at FlowParserMixin.allowInAnd (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12443:12)
+[web]     at FlowParserMixin.parseMaybeAssignAllowIn (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10817:17)
+[web]     at FlowParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12510:17)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11692:28)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3603:18)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11348:23)
+[web]     at FlowParserMixin.parseExprAtom (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:4776:20)
+[web]     at FlowParserMixin.parseExprSubscripts (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11098:23)
+[web]     at FlowParserMixin.parseUpdate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11083:21)
+[web]     at FlowParserMixin.parseMaybeUnary (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11063:23)
+[web]     at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10916:61)
+[web]     at FlowParserMixin.parseExprOps (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10921:23)
+[web]     at FlowParserMixin.parseMaybeConditional (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10898:23)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10848:21)
+[web]     at FlowParserMixin.parseMaybeAssign (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3561:18)
+[web]     at FlowParserMixin.parseExpressionBase (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10801:23)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10797:39
+[web]     at FlowParserMixin.allowInAnd (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12438:16)
+[web]     at FlowParserMixin.parseExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:10797:17)
+[web]     at FlowParserMixin.parseReturnStatement (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13159:28)
+[web]     at FlowParserMixin.parseStatementContent (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12815:21)
+[web]     at FlowParserMixin.parseStatementLike (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12784:17)
+[web]     at FlowParserMixin.parseStatementLike (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:2930:24)
+[web]     at FlowParserMixin.parseStatementListItem (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12764:17)
+[web]     at FlowParserMixin.parseBlockOrModuleBlockBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13333:61)
+[web]     at FlowParserMixin.parseBlockBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13326:10)
+[web]     at FlowParserMixin.parseBlock (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:13314:10)
+[web]     at FlowParserMixin.parseFunctionBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12117:24)
+[web]     at C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:2904:63
+[web]     at FlowParserMixin.forwardNoArrowParamsConversionAt (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3080:16)
+[web]     at FlowParserMixin.parseFunctionBody (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:2904:12)
+[web]     at FlowParserMixin.parseArrowExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:12092:10)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:11704:12)
+[web]     at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Dell\Documents\FinCalc\node_modules\@babel\parser\lib\index.js:3603:18)
+[web] 
+[web] [1m[31mERROR[39m[22m in [1m[eslint] 
+[web] src\pages\PortfolioDetailsPage.jsx
+[web]   Line 344:24:  Parsing [1m[31merror[39m[22m[1m: Expected corresponding JSX closing tag for <tr>. (344:24)
+[web] 
+[web] [39m[22m
+[web] 
+[web] webpack compiled with [1m[31m2 errors[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
