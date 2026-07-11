@@ -290,6 +290,7 @@ export default function PortfolioDetailsPage() {
               <thead>
                 <tr>
                   <th>Type</th>
+                  <th>Starting Year</th>
                   <th>Saved Configuration</th>
                   <th></th>
                 </tr>
@@ -300,7 +301,7 @@ export default function PortfolioDetailsPage() {
                     const options = configLibrary[item.type] || [];
                     return (
                       <tr key={item.id}>
-                        <td className="portfolio-type-cell">
+                        <td className="">
                           <select
                             className="calc-input"
                             value={item.type}
@@ -321,9 +322,8 @@ export default function PortfolioDetailsPage() {
                                 {type}
                               </option>
                             ))}
-                          </select>
+                          </select></td><td>
                           <label className="portfolio-start-year-field">
-                            <span>Starting Year</span>
                             <StartYearInput
                               value={item.startYear}
                               disabled={!canEdit}
