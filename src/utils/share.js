@@ -43,7 +43,7 @@ export async function createPublicConfigLink({ page, title, config }) {
   const response = await fetch(`${API}/api/public-configs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ page, title, config }),
+    body: JSON.stringify({ page, configName: title, config }),
   });
   return parseApiResponse(response);
 }

@@ -12,6 +12,8 @@ import { calculate as ppf } from '../ppf';
 import { calculate as loan } from '../loan';
 import { calculate as swp } from '../swp';
 import { calculate as sip } from '../sip';
+import { buildPortfolioSnapshot } from '../../utils/portfolio';
+import { PORTFOLIO_BASE_YEAR } from '../../utils/portfolio';
 
 const REQUIRED_KEYS = ['summary', 'steps', 'assumptions', 'charts', 'yearlyTable', 'insights', 'pdfData'];
 
@@ -96,6 +98,13 @@ describe('calculator engines', () => {
     expect(r.raw.postTaxValue).toBeGreaterThan(r.raw.amount);
   });
 
+  test('lumpsum expense ratio reduces maturity value', () => {
+    const withoutExpense = lumpsum({ amount: 1000000, years: 10, ratePercentage: 12, expenseRatio: 0, taxRate: 12.5, inflation: 6 });
+    const withExpense = lumpsum({ amount: 1000000, years: 10, ratePercentage: 12, expenseRatio: 1, taxRate: 12.5, inflation: 6 });
+    expect(withExpense.raw.postTaxValue).toBeLessThan(withoutExpense.raw.postTaxValue);
+    expect(withExpense.raw.expenseDrag).toBeGreaterThan(0);
+  });
+
   test('ppf calculate', () => {
     const r = ppf({ monthlyAmount: 12500, interestRate: 7.1, inflation: 6 });
     assertShape('ppf', r);
@@ -114,6 +123,13 @@ describe('calculator engines', () => {
     expect(r.raw.totalWithdrawn).toBeGreaterThan(0);
   });
 
+  test('swp expense ratio reduces remaining corpus', () => {
+    const withoutExpense = swp({ corpusAmount: 5000000, monthlyWithdrawal: 25000, ratePercentage: 8, expenseRatio: 0, years: 10, taxRate: 12.5, inflation: 6 });
+    const withExpense = swp({ corpusAmount: 5000000, monthlyWithdrawal: 25000, ratePercentage: 8, expenseRatio: 1, years: 10, taxRate: 12.5, inflation: 6 });
+    expect(withExpense.raw.corpus).toBeLessThan(withoutExpense.raw.corpus);
+    expect(withExpense.raw.expenseDrag).toBeGreaterThan(0);
+  });
+
   test('sip calculate', () => {
     const r = sip({ mode: 'simple', monthlyAmount: 50000, years: 10, ratePercentage: 12, taxRate: 12.5, inflation: 6, initialLumpsum: 0, expenseRatio: 0 });
     assertShape('sip', r);
@@ -124,5 +140,20 @@ describe('calculator engines', () => {
     const r = sip({ mode: 'goal', goalAmount: 5000000, years: 10, ratePercentage: 12, taxRate: 12.5, inflation: 6, initialLumpsum: 0, expenseRatio: 0, monthlyAmount: 0 });
     assertShape('sip goal', r);
     expect(r.raw.goalMeta.requiredMonthlySIP).toBeGreaterThan(0);
+  });
+
+  test('portfolio SIP starts later and compounds after SIP period', () => {
+    const items = [{
+      id: 'sip',
+      type: 'SIP',
+      startYear: PORTFOLIO_BASE_YEAR + 2,
+      resolvedConfig: { monthlyAmount: 10000, years: 2, ratePercentage: 12, expenseRatio: 0 },
+    }];
+    const beforeStart = buildPortfolioSnapshot(items, PORTFOLIO_BASE_YEAR + 1, 0, false);
+    const afterSipEnds = buildPortfolioSnapshot(items, PORTFOLIO_BASE_YEAR + 5, 0, false);
+
+    expect(beforeStart.totalNetWorth).toBe(0);
+    expect(afterSipEnds.monthlyInvestments).toBe(0);
+    expect(afterSipEnds.totalReturns).toBeGreaterThan(0);
   });
 });

@@ -7,9 +7,11 @@ import { parseApiResponse } from '../utils/api';
 import {
   PORTFOLIO_TYPE_OPTIONS,
   PORTFOLIO_TYPE_TO_PAGE,
+  PORTFOLIO_BASE_YEAR,
   buildPortfolioProjection,
   buildPortfolioSnapshot,
   createDefaultPortfolioItem,
+  normalizePortfolioCalendarYear,
 } from '../utils/portfolio';
 import { formatINR } from '../utils/format';
 import { API } from "../config";
@@ -45,6 +47,43 @@ function ConfigSelect({ type, item, options, onChange, disabled = false }) {
   );
 }
 
+function StartYearInput({ value, disabled, onCommit }) {
+  const normalizedValue = normalizePortfolioCalendarYear(value, PORTFOLIO_BASE_YEAR);
+  const [draft, setDraft] = useState(String(normalizedValue));
+
+  useEffect(() => {
+    setDraft(String(normalizedValue));
+  }, [normalizedValue]);
+
+  const commit = () => {
+    const trimmed = String(draft).trim();
+    const nextYear = trimmed === ''
+      ? PORTFOLIO_BASE_YEAR
+      : normalizePortfolioCalendarYear(trimmed, PORTFOLIO_BASE_YEAR);
+    setDraft(String(nextYear));
+    onCommit(nextYear);
+  };
+
+  return (
+    <input
+      type="number"
+      className="calc-input"
+      min={PORTFOLIO_BASE_YEAR}
+      max={PORTFOLIO_BASE_YEAR + 99}
+      placeholder={String(PORTFOLIO_BASE_YEAR)}
+      value={draft}
+      disabled={disabled}
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') {
+          event.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
 export default function PortfolioDetailsPage() {
   const { portfolioId } = useParams();
   const navigate = useNavigate();
@@ -54,7 +93,6 @@ export default function PortfolioDetailsPage() {
   const privatePortfolio = user ? portfolios.find((entry) => entry.id === portfolioId) : null;
   const [publicPortfolio, setPublicPortfolio] = useState(null);
   const [publicLoadState, setPublicLoadState] = useState('idle');
-  const [publishState, setPublishState] = useState({ loading: false, message: '', url: '' });
   const portfolio = privatePortfolio || publicPortfolio;
   const isPublicView = Boolean(!privatePortfolio && publicPortfolio);
   const canEdit = Boolean(privatePortfolio && user);
@@ -140,7 +178,7 @@ export default function PortfolioDetailsPage() {
     () =>
       portfolio
         ? buildPortfolioSnapshot(portfolio.items || [], portfolio.timelineYear, inflationRate, portfolio.inflationAdjusted)
-        : { totalNetWorth: 0, monthlyInvestments: 0, monthlyPayments: 0, monthlyWithdrawals: 0 },
+        : { totalNetWorth: 0, monthlyInvestments: 0, monthlyPayments: 0, monthlyWithdrawals: 0, totalInvested: 0, totalReturns: 0 },
     [inflationRate, portfolio]
   );
 
@@ -156,33 +194,6 @@ export default function PortfolioDetailsPage() {
         : { labels: [], netWorthSeries: [] },
     [inflationRate, portfolio]
   );
-
-  const publishPortfolio = async () => {
-    if (!portfolio || !token) return;
-    setPublishState({ loading: true, message: '', url: '' });
-
-    try {
-      const response = await fetch(`${API}/api/public-portfolios`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ portfolio }),
-      });
-      const data = await parseApiResponse(response, 'Could not make portfolio public.');
-      const nextPortfolio = {
-        ...portfolio,
-        isPublic: true,
-        publicSlug: data.slug,
-        publicUrl: data.url,
-      };
-      updatePortfolio(nextPortfolio);
-      setPublishState({ loading: false, message: 'Public link is ready.', url: data.url });
-    } catch (error) {
-      setPublishState({ loading: false, message: error.message || 'Could not make portfolio public.', url: '' });
-    }
-  };
 
   if (!portfolio) {
     if (publicLoadState === 'loading') {
@@ -215,7 +226,7 @@ export default function PortfolioDetailsPage() {
     );
   }
 
-  const currentCalendarYear = new Date().getFullYear() + portfolio.timelineYear - 1;
+  const selectedCalendarYear = normalizePortfolioCalendarYear(portfolio.timelineYear, PORTFOLIO_BASE_YEAR);
 
   return (
     <div className="page portfolio-page">
@@ -272,24 +283,6 @@ export default function PortfolioDetailsPage() {
                 Inflation Adjusted
               </button>
             </div>
-            {canEdit && (
-              <div className="portfolio-public-actions">
-                <button
-                  type="button"
-                  className="mini-btn primary"
-                  onClick={publishPortfolio}
-                  disabled={publishState.loading}
-                >
-                  {publishState.loading ? 'Publishing...' : 'Make Public'}
-                </button>
-                {(publishState.url || portfolio.publicUrl) && (
-                  <a className="portfolio-public-link" href={publishState.url || portfolio.publicUrl}>
-                    {publishState.url || portfolio.publicUrl}
-                  </a>
-                )}
-                {publishState.message && <span className="settings-note">{publishState.message}</span>}
-              </div>
-            )}
           </div>
 
           <div className="portfolio-table-wrap">
@@ -307,7 +300,7 @@ export default function PortfolioDetailsPage() {
                     const options = configLibrary[item.type] || [];
                     return (
                       <tr key={item.id}>
-                        <td>
+                        <td className="portfolio-type-cell">
                           <select
                             className="calc-input"
                             value={item.type}
@@ -316,7 +309,9 @@ export default function PortfolioDetailsPage() {
                               updatePortfolio({
                                 ...portfolio,
                                 items: portfolio.items.map((entry) =>
-                                  entry.id === item.id ? createDefaultPortfolioItem(event.target.value) : entry
+                                  entry.id === item.id
+                                    ? { ...createDefaultPortfolioItem(event.target.value), startYear: normalizePortfolioCalendarYear(item.startYear, PORTFOLIO_BASE_YEAR) }
+                                    : entry
                                 ),
                               })
                             }
@@ -327,6 +322,23 @@ export default function PortfolioDetailsPage() {
                               </option>
                             ))}
                           </select>
+                          <label className="portfolio-start-year-field">
+                            <span>Starting Year</span>
+                            <StartYearInput
+                              value={item.startYear}
+                              disabled={!canEdit}
+                              onCommit={(nextYear) =>
+                                updatePortfolio({
+                                  ...portfolio,
+                                  items: portfolio.items.map((entry) =>
+                                    entry.id === item.id
+                                      ? { ...entry, startYear: nextYear }
+                                      : entry
+                                  ),
+                                })
+                              }
+                            />
+                          </label>
                         </td>
                         <td>
                           <ConfigSelect
@@ -408,8 +420,12 @@ export default function PortfolioDetailsPage() {
                 <strong>{formatINR(Math.round(snapshot.monthlyPayments || 0))}</strong>
               </div>
               <div className="portfolio-stat">
-                <span>Current Year</span>
-                <strong>{currentCalendarYear}</strong>
+                <span>Total Returns</span>
+                <strong>{formatINR(Math.round(snapshot.totalReturns || 0))}</strong>
+              </div>
+              <div className="portfolio-stat">
+                <span>Selected Year</span>
+                <strong>{selectedCalendarYear}</strong>
               </div>
               <div className="portfolio-stat">
                 <span>Inflation</span>
@@ -418,17 +434,17 @@ export default function PortfolioDetailsPage() {
             </div>
 
             <label className="portfolio-slider-block" htmlFor="portfolioTimeline">
-              <span className="slbl">Timeline Slider</span>
-              <div className="portfolio-slider-label">Year {portfolio.timelineYear}</div>
+              <span className="slbl">Timeline Year</span>
+              <div className="portfolio-slider-label">{selectedCalendarYear}</div>
               <input
                 id="portfolioTimeline"
                 type="range"
-                min="1"
-                max="100"
-                value={portfolio.timelineYear}
+                min={PORTFOLIO_BASE_YEAR}
+                max={PORTFOLIO_BASE_YEAR + 99}
+                value={selectedCalendarYear}
                 disabled={!canEdit}
                 onChange={(event) =>
-                  updatePortfolio({ ...portfolio, timelineYear: Number(event.target.value) })
+                  updatePortfolio({ ...portfolio, timelineYear: normalizePortfolioCalendarYear(event.target.value, PORTFOLIO_BASE_YEAR) })
                 }
               />
             </label>

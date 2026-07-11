@@ -32,8 +32,6 @@ export default function SavedConfigsPanel({
   const [editingName, setEditingName] = useState("");
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [shareUrl, setShareUrl] = useState('');
-  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [mode, setMode] = useState("view"); // 'view' or 'save'
 
   const readErrorMessage = async (response, fallback) => {
@@ -248,43 +246,6 @@ export default function SavedConfigsPanel({
     }
   };
 
-  const handleShare = async (entry) => {
-    if (!user || !token) {
-      setAuthModalOpen(true);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await fetch(`${API}/api/public-configs`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          page: storageKey,
-          configName: entry.name,
-          config: entry.config,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || 'Failed to create public link');
-      }
-
-      const data = await response.json();
-      setShareUrl(data.url);
-      setShareModalOpen(true);
-      showSuccess('Public link created.');
-    } catch (err) {
-      showError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <>
       <div className="history-actions">
@@ -320,46 +281,6 @@ export default function SavedConfigsPanel({
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
         />
-      )}
-
-      {shareModalOpen && (
-        <div className="saved-config-backdrop" onClick={(e) => e.target === e.currentTarget && setShareModalOpen(false)}>
-          <div className="saved-config-modal" role="dialog">
-            <div className="saved-config-head">
-              <div>
-                <h2>Public Link Created</h2>
-                <p>Share this configuration with others</p>
-              </div>
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => setShareModalOpen(false)}
-                aria-label="Close"
-              >
-                <span className="material-symbols-rounded">close</span>
-              </button>
-            </div>
-            <div className="saved-config-save-row">
-              <input
-                type="text"
-                className="saved-config-input"
-                value={shareUrl}
-                readOnly
-                onClick={(e) => e.target.select()}
-              />
-              <button
-                type="button"
-                className="mini-btn primary"
-                onClick={() => {
-                  navigator.clipboard.writeText(shareUrl);
-                  showSuccess('Link copied to clipboard!');
-                }}
-              >
-                Copy
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       <div
@@ -530,14 +451,6 @@ export default function SavedConfigsPanel({
                             disabled={loading}
                           >
                             PDF Report
-                          </button>
-                          <button
-                            type="button"
-                            className="saved-config-action"
-                            onClick={() => handleShare(entry)}
-                            disabled={loading}
-                          >
-                            Share
                           </button>
                           {pendingDeleteId === entry.id ? (
                             <>

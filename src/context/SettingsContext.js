@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { parseApiResponse } from '../utils/api';
+import { normalizePortfolioCalendarYear, PORTFOLIO_BASE_YEAR } from '../utils/portfolio';
 import { API } from "../config";
 
 const DEFAULT_SETTINGS = {
@@ -41,6 +42,7 @@ function normalizePortfolioItem(item, index) {
     configId: String(item?.configId || ''),
     configName: String(item?.configName || ''),
     resolvedConfig: item?.resolvedConfig && typeof item.resolvedConfig === 'object' ? item.resolvedConfig : null,
+    startYear: normalizePortfolioCalendarYear(item?.startYear, PORTFOLIO_BASE_YEAR),
   };
 }
 
@@ -53,7 +55,7 @@ function normalizePortfolio(portfolio, index) {
     isPublic: Boolean(portfolio?.isPublic),
     publicSlug: String(portfolio?.publicSlug || ''),
     publicUrl: String(portfolio?.publicUrl || ''),
-    timelineYear: Math.min(100, Math.max(1, Number(portfolio?.timelineYear ?? 1) || 1)),
+    timelineYear: normalizePortfolioCalendarYear(portfolio?.timelineYear, PORTFOLIO_BASE_YEAR),
     updatedAt: portfolio?.updatedAt || new Date().toISOString(),
     items: Array.isArray(portfolio?.items) ? portfolio.items.map(normalizePortfolioItem) : [],
   };

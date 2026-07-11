@@ -1,4 +1,5 @@
 import {
+  annualReturnAfterExpense,
   fvLumpsum,
   fvSip,
   sipRequired,
@@ -34,6 +35,12 @@ function buildAccumulationTable(years, existingSavings, existingSip, returnRate)
   return { rows, raw };
 }
 
+function estimateAccumulationExpenseDrag(years, existingSavings, existingSip, grossReturnRate, netReturnRate) {
+  const gross = fvLumpsum(existingSavings, grossReturnRate, years) + fvSip(existingSip, grossReturnRate, years * 12);
+  const net = fvLumpsum(existingSavings, netReturnRate, years) + fvSip(existingSip, netReturnRate, years * 12);
+  return Math.max(0, gross - net);
+}
+
 function buildDepletionTable(
   startCorpus,
   monthlyExpense,
@@ -63,6 +70,21 @@ function buildDepletionTable(
   return { rows, raw };
 }
 
+function estimateDepletionExpenseDrag(startCorpus, monthlyExpense, inflation, grossReturnRate, netReturnRate, years) {
+  let grossCorpus = startCorpus;
+  let netCorpus = startCorpus;
+  let expense = monthlyExpense;
+
+  for (let yr = 1; yr <= years; yr += 1) {
+    const annualWithdrawal = expense * 12;
+    grossCorpus = Math.max(0, grossCorpus * (1 + grossReturnRate) - annualWithdrawal);
+    netCorpus = Math.max(0, netCorpus * (1 + netReturnRate) - annualWithdrawal);
+    expense *= 1 + inflation;
+  }
+
+  return Math.max(0, grossCorpus - netCorpus);
+}
+
 export function calculate(inputs) {
   const currentAge = parseNum(inputs.currentAge, 30);
   const retirementAge = parseNum(inputs.retirementAge, 60);
@@ -70,6 +92,8 @@ export function calculate(inputs) {
   const monthlyExpenses = parseNum(inputs.monthlyExpenses, 50000);
   const inflation = parseNum(inputs.inflation, 6) / 100;
   const returnRate = parseNum(inputs.returnRate, 12) / 100;
+  const expenseRatio = parseNum(inputs.expenseRatio, 0) / 100;
+  const netReturnRate = annualReturnAfterExpense(returnRate, expenseRatio);
   const existingSavings = parseNum(inputs.existingSavings, 0);
   const existingSip = parseNum(inputs.existingSip, 0);
 
@@ -82,29 +106,32 @@ export function calculate(inputs) {
 
   const corpusNeeded = pvGrowingAnnuity(
     annualExpenseAtRetirement,
-    returnRate,
+    netReturnRate,
     inflation,
     retirementYears,
   );
 
-  const projectedFromSavings = fvLumpsum(existingSavings, returnRate, yearsToRetire);
-  const projectedFromSip = fvSip(existingSip, returnRate, monthsToRetire);
+  const projectedFromSavings = fvLumpsum(existingSavings, netReturnRate, yearsToRetire);
+  const projectedFromSip = fvSip(existingSip, netReturnRate, monthsToRetire);
   const projectedCorpus = projectedFromSavings + projectedFromSip;
   const gap = Math.max(0, corpusNeeded - projectedCorpus);
-  const requiredSip = sipRequired(gap, returnRate, monthsToRetire);
+  const requiredSip = sipRequired(gap, netReturnRate, monthsToRetire);
   const score = readinessScore(projectedCorpus, corpusNeeded);
+  const accumulationExpenseDrag = estimateAccumulationExpenseDrag(yearsToRetire, existingSavings, existingSip, returnRate, netReturnRate);
+  const depletionExpenseDrag = estimateDepletionExpenseDrag(corpusNeeded, futureMonthlyExpenses, inflation, returnRate, netReturnRate, retirementYears);
+  const lifetimeExpenseDrag = accumulationExpenseDrag + depletionExpenseDrag;
 
   const { rows: accumulationRows, raw: accumulationRaw } = buildAccumulationTable(
     yearsToRetire,
     existingSavings,
     existingSip,
-    returnRate,
+    netReturnRate,
   );
   const { rows: depletionRows, raw: depletionRaw } = buildDepletionTable(
     corpusNeeded,
     futureMonthlyExpenses,
     inflation,
-    returnRate,
+    netReturnRate,
     retirementYears,
     retirementAge,
   );
@@ -122,9 +149,11 @@ export function calculate(inputs) {
       { label: 'Gap', value: formatINR(Math.round(gap)), tone: gap > 0 ? 'danger' : 'success' },
       { label: 'Required SIP', value: formatINR(Math.round(requiredSip)), sub: 'Additional monthly SIP to close gap' },
       { label: 'Future Monthly Expenses', value: formatINR(Math.round(futureMonthlyExpenses)), sub: 'At retirement (inflation-adjusted)' },
+      { label: 'Expense Ratio Cost', value: formatINR(Math.round(lifetimeExpenseDrag)), sub: 'Accumulation plus retirement phase' },
       { label: 'Readiness Score', value: `${score}/100`, tone: score >= 80 ? 'success' : score >= 50 ? 'warning' : 'danger' },
     ],
     steps: [
+      `Net return after ${formatPercent(expenseRatio * 100)} expense ratio = ${formatPercent(netReturnRate * 100)}`,
       `Years to retirement: ${yearsToRetire} (${currentAge} → ${retirementAge})`,
       `Future monthly expenses = ${formatINR(monthlyExpenses)} × (1 + ${formatPercent(inflation * 100)})${yearsToRetire} = ${formatINR(Math.round(futureMonthlyExpenses))}`,
       `Corpus needed (PV of growing annuity) = ${formatINR(Math.round(corpusNeeded))} for ${retirementYears} retirement years`,
@@ -210,6 +239,7 @@ export function calculate(inputs) {
         { label: 'Projected Corpus', value: formatINR(Math.round(projectedCorpus)) },
         { label: 'Gap', value: formatINR(Math.round(gap)) },
         { label: 'Required SIP', value: formatINR(Math.round(requiredSip)) },
+        { label: 'Expense Ratio Cost', value: formatINR(Math.round(lifetimeExpenseDrag)) },
         { label: 'Readiness Score', value: `${score}/100` },
       ],
       tables: [
@@ -223,6 +253,10 @@ export function calculate(inputs) {
       gap,
       requiredSip,
       futureMonthlyExpenses,
+      lifetimeExpenseDrag,
+      accumulationExpenseDrag,
+      depletionExpenseDrag,
+      expenseRatio,
       readinessScore: score,
     },
   };

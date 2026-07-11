@@ -13,6 +13,10 @@ export function fvLumpsum(principal, annualRate, years) {
   return principal * Math.pow(1 + annualRate, years);
 }
 
+export function annualReturnAfterExpense(annualRate, expenseRatio = 0) {
+  return (1 + annualRate) * (1 - Math.max(0, expenseRatio)) - 1;
+}
+
 export function fvSip(monthlyAmount, annualRate, months) {
   const r = periodicRate(annualRate, 12);
   if (months <= 0) return 0;

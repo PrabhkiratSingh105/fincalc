@@ -7,10 +7,11 @@ const FIELDS = [
   { key: 'goalYears', label: 'Goal Timeline (Years)', min: 1, max: 40, tooltip: 'Years until you need the goal amount.' },
   { key: 'inflation', label: 'Inflation Rate (% p.a.)', min: 0, max: 15, step: 0.5, tooltip: 'Inflates today\'s goal into the future target amount.' },
   { key: 'returnRate', label: 'Expected Return (% p.a.)', min: 4, max: 20, step: 0.5, tooltip: 'Expected annual return on investments.' },
+  { key: 'expenseRatio', label: 'Expense Ratio (% p.a.)', min: 0, max: 5, step: 0.01, tooltip: 'Annual fund expense ratio deducted while projecting the goal corpus.' },
   { key: 'existingInvestment', label: 'Existing Investment (₹)', min: 0, max: 50000000, step: 50000, tooltip: 'Amount already invested towards this goal.' },
 ];
 
-const DEFAULTS = { goalAmount: 5000000, goalYears: 10, inflation: 6, returnRate: 12, existingInvestment: 200000 };
+const DEFAULTS = { goalAmount: 5000000, goalYears: 10, inflation: 6, returnRate: 12, expenseRatio: 0, existingInvestment: 200000 };
 
 export default function GoalSipCalculator() {
   return (

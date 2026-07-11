@@ -8,6 +8,7 @@ const { createClient } = require('@supabase/supabase-js');
 loadEnv();
 
 const app = express();
+app.set('trust proxy', true);
 app.use(cors());
 const PORT = process.env.PORT || 3000;
 const MAX_HISTORY_ITEMS = 50;
@@ -66,6 +67,35 @@ function hasReactBuild() {
 function resolveIndexHtml() {
   if (hasReactBuild()) return BUILD_INDEX;
   return path.join(__dirname, 'public', 'index.html');
+}
+
+function trimTrailingSlash(value) {
+  return String(value || '').replace(/\/+$/, '');
+}
+
+function getPublicBaseUrl(req) {
+  const origin = trimTrailingSlash(req.get('origin'));
+  if (origin) return origin;
+
+  const configuredBaseUrl = trimTrailingSlash(process.env.BASE_URL);
+  if (configuredBaseUrl) return configuredBaseUrl;
+
+  const forwardedProto = String(req.get('x-forwarded-proto') || '').split(',')[0].trim();
+  const proto = forwardedProto || req.protocol || 'http';
+  return `${proto}://${req.get('host')}`;
+}
+
+function getPortfolioBaseYear() {
+  return new Date().getFullYear();
+}
+
+function normalizePortfolioCalendarYear(value, fallback = getPortfolioBaseYear()) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return fallback;
+  if (numeric < 1900) {
+    return getPortfolioBaseYear() + Math.min(99, Math.max(1, numeric || 1)) - 1;
+  }
+  return Math.min(getPortfolioBaseYear() + 99, Math.max(1900, Math.round(numeric)));
 }
 
 // Serve production React build only when it exists (avoids empty shell page)
@@ -215,7 +245,7 @@ function normalizePublicPortfolio(input) {
     name,
     inflationAdjusted: Boolean(portfolio.inflationAdjusted),
     inflationRate: Number(portfolio.inflationRate ?? 6) || 6,
-    timelineYear: Math.min(100, Math.max(1, Number(portfolio.timelineYear ?? 1) || 1)),
+    timelineYear: normalizePortfolioCalendarYear(portfolio.timelineYear),
     updatedAt: portfolio.updatedAt || new Date().toISOString(),
     items: Array.isArray(portfolio.items)
       ? portfolio.items.map((item, index) => ({
@@ -224,6 +254,7 @@ function normalizePublicPortfolio(input) {
           configId: String(item?.configId || ''),
           configName: String(item?.configName || ''),
           resolvedConfig: item?.resolvedConfig && typeof item.resolvedConfig === 'object' ? item.resolvedConfig : null,
+          startYear: normalizePortfolioCalendarYear(item?.startYear),
         }))
       : [],
   };
@@ -283,7 +314,7 @@ function normalizeSettings(input) {
             id: 'portfolio_legacy',
             name: String(safe.homePortfolio?.portfolioName || 'Portfolio 1'),
             inflationAdjusted: Boolean(safe.homePortfolio?.inflationAdjusted),
-            timelineYear: Math.min(100, Math.max(1, Number(safe.homePortfolio?.timelineYear ?? 1) || 1)),
+            timelineYear: normalizePortfolioCalendarYear(safe.homePortfolio?.timelineYear),
             updatedAt: new Date().toISOString(),
             items: Array.isArray(safe.homePortfolio?.items) ? safe.homePortfolio.items : [],
           }]
@@ -306,7 +337,7 @@ function normalizeSettings(input) {
       isPublic: Boolean(portfolio?.isPublic),
       publicSlug: String(portfolio?.publicSlug || ''),
       publicUrl: String(portfolio?.publicUrl || ''),
-      timelineYear: Math.min(100, Math.max(1, Number(portfolio?.timelineYear ?? 1) || 1)),
+      timelineYear: normalizePortfolioCalendarYear(portfolio?.timelineYear),
       updatedAt: portfolio?.updatedAt || new Date().toISOString(),
       items: Array.isArray(portfolio?.items)
         ? portfolio.items.map((item, index) => ({
@@ -316,6 +347,7 @@ function normalizeSettings(input) {
             configName: String(item?.configName || ''),
             config: undefined,
             resolvedConfig: item?.resolvedConfig && typeof item.resolvedConfig === 'object' ? item.resolvedConfig : null,
+            startYear: normalizePortfolioCalendarYear(item?.startYear),
           }))
         : [],
     })),
@@ -447,7 +479,7 @@ app.post('/api/public-portfolios', requireAuth, asyncHandler(async (req, res) =>
 
   res.status(201).json({
     slug,
-    url: `${req.protocol}://${req.get('host')}/portfolio/${encodeURIComponent(slug)}`,
+    url: `${getPublicBaseUrl(req)}/portfolio/${encodeURIComponent(slug)}`,
     portfolio,
   });
 }));
@@ -669,7 +701,7 @@ app.post('/api/public-configs', requireAuth, async (req, res) => {
     }
 
     res.status(201).json({
-      url: `${req.protocol}://${req.get('host')}/${page}/${username}/config/${encodeURIComponent(configName)}`,
+      url: `${getPublicBaseUrl(req)}/${page}/${username}/config/${encodeURIComponent(configName)}`,
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Could not create public link.' });

@@ -134,30 +134,13 @@ header {
 .logo {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 18px;
-  letter-spacing: -0.5px;
+  font-size: 19px;
   color: var(--text);
   display: flex;
   align-items: center;
-  gap: 9px;
   text-decoration: none;
-  margin-right: 20px;
-}
-
-.logo-box {
-  width: 37px;
-  height: 33px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.logo-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
+  margin-right: 22px;
+  min-width: max-content;
 }
 
 .logo-name em {
@@ -2023,23 +2006,6 @@ input[type='range']::-moz-range-thumb {
   opacity: 0.72;
 }
 
-.portfolio-public-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.portfolio-public-link {
-  max-width: min(100%, 360px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--indigo);
-  font-size: 13px;
-  font-weight: 700;
-}
-
 .portfolio-login-card {
   display: flex;
   align-items: center;
@@ -2056,10 +2022,26 @@ input[type='range']::-moz-range-thumb {
   overflow-x: auto;
 }
 
+.portfolio-table th,
+.portfolio-table td {
+  vertical-align: top;
+}
+
+.portfolio-table td:first-child {
+  width: 230px;
+}
+
+.portfolio-table td:last-child {
+  width: 96px;
+  text-align: right;
+}
+
 .portfolio-type-cell {
   display: grid;
-  gap: 10px;
-  min-width: 200px;
+  grid-template-columns: minmax(110px, 1fr) minmax(118px, 128px);
+  align-items: end;
+  gap: 8px;
+  min-width: 230px;
 }
 
 .portfolio-inline-grid {
@@ -2075,6 +2057,19 @@ input[type='range']::-moz-range-thumb {
   font-size: 11px;
   font-weight: 700;
   color: var(--muted);
+}
+
+.portfolio-start-year-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.portfolio-start-year-field .calc-input {
+  min-height: 38px;
 }
 
 .portfolio-empty-state {
@@ -2165,13 +2160,27 @@ input[type='range']::-moz-range-thumb {
   border-color: rgba(148, 163, 184, 0.22);
 }
 
-[data-theme='dark'] .portfolio-worth-value,
-[data-theme='dark'] .portfolio-stat strong {
+[data-theme='dark'] .portfolio-toggle-group {
+  background: rgba(15, 20, 32, 0.72);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+[data-theme='dark'] .portfolio-toggle.active {
+  background: rgba(99, 102, 241, 0.18);
+  color: #C7D2FE;
+  box-shadow: none;
+}
+
+[data-theme='dark'] .portfolio-table .calc-input,
+[data-theme='dark'] .portfolio-toolbar .calc-input {
+  background: rgba(15, 20, 32, 0.74);
+  border-color: rgba(148, 163, 184, 0.22);
   color: var(--text);
 }
 
-[data-theme='dark'] .portfolio-public-link {
-  color: #A5B4FC;
+[data-theme='dark'] .portfolio-worth-value,
+[data-theme='dark'] .portfolio-stat strong {
+  color: var(--text);
 }
 
 @media (max-width: 860px) {
