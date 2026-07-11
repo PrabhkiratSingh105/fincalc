@@ -9,6 +9,7 @@ const FIELDS = [
   { key: 'monthlyExpenses', label: 'Current Monthly Expenses (₹)', min: 10000, max: 500000, step: 5000, tooltip: 'Today\'s monthly spending. Inflated to retirement and beyond.' },
   { key: 'inflation', label: 'Expected Inflation (% p.a.)', min: 2, max: 12, step: 0.5, tooltip: 'Annual inflation rate applied to expenses.' },
   { key: 'returnRate', label: 'Expected Investment Return (% p.a.)', min: 4, max: 18, step: 0.5, tooltip: 'Expected portfolio return during accumulation and retirement.' },
+  { key: 'expenseRatio', label: 'Expense Ratio (% p.a.)', min: 0, max: 5, step: 0.01, tooltip: 'Annual fund expense ratio applied through accumulation and retirement.' },
   { key: 'existingSavings', label: 'Existing Retirement Savings (₹)', min: 0, max: 50000000, step: 50000, tooltip: 'Current lumpsum retirement corpus.' },
   { key: 'existingSip', label: 'Existing SIP Contribution (₹/month)', min: 0, max: 200000, step: 1000, tooltip: 'Monthly SIP already running for retirement.' },
 ];
@@ -20,13 +21,14 @@ const DEFAULTS = {
   monthlyExpenses: 50000,
   inflation: 6,
   returnRate: 12,
+  expenseRatio: 0,
   existingSavings: 500000,
   existingSip: 10000,
 };
 
 const SECTIONS = [
   { title: 'Personal Details', fields: ['currentAge', 'retirementAge', 'lifeExpectancy'] },
-  { title: 'Expenses & Assumptions', fields: ['monthlyExpenses', 'inflation', 'returnRate'], divider: true },
+  { title: 'Expenses & Assumptions', fields: ['monthlyExpenses', 'inflation', 'returnRate', 'expenseRatio'], divider: true },
   { title: 'Existing Investments', fields: ['existingSavings', 'existingSip'] },
 ];
 

@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import logo from '../assets/logo.png';
 
 const NAV = [
   {
@@ -75,9 +74,6 @@ export default function Header({ setShowAuthModal }) {
     <header ref={headerRef}>
       <div className="h-inner">
         <Link to="/" className="logo">
-          <div className="logo-box">
-            <img src={logo} alt="PlanMyCapital logo" />
-          </div>
           <span className="logo-name">
             PlanMy<em>Capital</em>
           </span>
