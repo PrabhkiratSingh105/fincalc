@@ -54,7 +54,7 @@ const FIELDS = [
     min: 1,
     max: 30,
     step: 0.5,
-    tooltip: 'Applied once per year on the total corpus.',
+    tooltip: 'Applied monthly to the invested balance using the standard annual-rate / 12 convention.',
   },
   {
     key: 'stepUpType',
@@ -103,7 +103,7 @@ const FIELDS = [
     min: 0,
     max: 5,
     step: 0.01,
-    tooltip: 'Deducted every year from the total corpus.',
+    tooltip: 'Deducted monthly at an annual-equivalent rate from the total corpus.',
   },
 ];
 

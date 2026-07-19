@@ -21,8 +21,11 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
   const tax = taxRate / 100;
   const er = expenseRatio / 100;
   const months = years * 12;
+  const monthlyReturn = rAnn / 12;
+  const monthlyExpenseFactor = Math.pow(1 - Math.max(0, er), 1 / 12);
 
   let corpus = initialLumpsum;
+  let grossCorpus = initialLumpsum;
   let sipInvested = 0;
   let investedInflAdj = initialLumpsum;
   let expenseDrag = 0;
@@ -32,26 +35,24 @@ function runSimulation(params, sipAmount, includeInflAdj = true) {
   for (let month = 1; month <= months; month += 1) {
     const sipThisMonth = currentSIP;
     corpus += sipThisMonth;
+    grossCorpus += sipThisMonth;
     sipInvested += sipThisMonth;
 
+    // A contribution only earns the returns for the months it is invested.
+    corpus *= 1 + monthlyReturn;
+    grossCorpus *= 1 + monthlyReturn;
+    corpus *= monthlyExpenseFactor;
+    expenseDrag = grossCorpus - corpus;
+    if (includeInflAdj) {
+      investedInflAdj += sipThisMonth / Math.pow(1 + Math.max(0, inf), month / 12);
+    }
+
     if (month % 12 === 0) {
-      corpus *= 1 + rAnn;
-
-      if (er > 0) {
-        const afterEr = corpus * (1 - er);
-        expenseDrag += corpus - afterEr;
-        corpus = afterEr;
-      }
-
       const year = month / 12;
       const invested = initialLumpsum + sipInvested;
       const yearGains = Math.max(0, corpus - invested);
       const yearTax = Math.max(0, yearGains - LTCG_EXEMPTION_LIMIT) * tax;
       const postTax = corpus - yearTax;
-
-      if (includeInflAdj) {
-        investedInflAdj += (sipThisMonth * 12) / Math.pow(1 + Math.max(0, inf), year - 0.5);
-      }
 
       yearlyData.push({
         year,
@@ -203,7 +204,7 @@ export function calculate(inputs) {
   const steps = [
     `Mode: ${engineParams.mode === 'goal' ? 'Goal-Based' : engineParams.mode === 'stepup' ? 'Step-Up SIP' : 'Simple SIP'}`,
     `Initial lumpsum ${formatINR(engineParams.initialLumpsum)} plus SIP contributions over ${engineParams.years} years`,
-    `Year-end return ${formatPercent(engineParams.ratePercentage)} applied; expense ratio ${formatPercent(engineParams.expenseRatio)} deducted from the total corpus`,
+    `Monthly return = ${formatPercent(engineParams.ratePercentage)} / 12; each SIP instalment compounds only from its investment month`,
     `Corpus at maturity = ${formatINR(Math.round(sim.corpus))}; gains = ${formatINR(Math.round(sim.gains))}`,
     `Tax = max(0, gains - Rs1,25,000) x ${formatPercent(engineParams.taxRate)} = ${formatINR(Math.round(sim.taxAmount))}`,
     `Post-tax = ${formatINR(Math.round(sim.postTaxValue))}; inflation-adjusted = ${formatINR(Math.round(sim.inflationAdjusted))}`,
@@ -221,10 +222,10 @@ export function calculate(inputs) {
     summary,
     steps,
     assumptions: [
-      'Monthly SIP added each month; return and expense ratio applied at year-end on total corpus',
-      'Expense ratio deducted every year from lumpsum and SIP combined balance',
+      'Monthly SIP is invested at the start of each month and earns monthly returns',
+      'Expense ratio is deducted monthly from the combined balance at its annual-equivalent rate',
       'Tax applied once at maturity on gains above the standard LTCG exemption',
-      'Inflation adjustment uses midpoint discounting for SIP contributions',
+      'Inflation adjustment discounts every SIP instalment back to today separately',
       engineParams.mode === 'stepup' ? `Step-up method: ${engineParams.stepUpType} by ${engineParams.stepUpValue}` : null,
     ].filter(Boolean),
     charts: [

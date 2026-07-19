@@ -69,6 +69,41 @@ function calculateLoanOutstanding(principal, annualRate, totalMonths, elapsedMon
   return { balance, monthlyEmi };
 }
 
+function calculateRecurringDepositValue(monthlyDeposit, annualRate, years, depositFrequency, compoundingFrequency) {
+  const frequencyMap = { monthly: 12, quarterly: 4, yearly: 1 };
+  const paymentsPerYear = frequencyMap[depositFrequency] || 12;
+  const compoundingPerYear = frequencyMap[compoundingFrequency] || 12;
+  const payment = depositFrequency === 'yearly'
+    ? monthlyDeposit * 12
+    : depositFrequency === 'quarterly'
+      ? monthlyDeposit * 3
+      : monthlyDeposit;
+  const periods = years * paymentsPerYear;
+  const effectiveAnnualRate = Math.pow(1 + annualRate / compoundingPerYear, compoundingPerYear) - 1;
+  const periodic = Math.pow(1 + effectiveAnnualRate, 1 / paymentsPerYear) - 1;
+  const value = periodic === 0
+    ? payment * periods
+    : payment * ((Math.pow(1 + periodic, periods) - 1) / periodic) * (1 + periodic);
+
+  return { value, invested: payment * periods };
+}
+
+function calculatePpfValue(monthlyAmount, annualRate, years) {
+  let corpus = 0;
+  const monthlyRate = annualRate / 12;
+
+  for (let year = 0; year < years; year += 1) {
+    let accruedInterest = 0;
+    for (let month = 0; month < 12; month += 1) {
+      corpus += monthlyAmount;
+      accruedInterest += corpus * monthlyRate;
+    }
+    corpus += accruedInterest;
+  }
+
+  return { value: corpus, invested: monthlyAmount * years * 12 };
+}
+
 function emptyPortfolioValue() {
   return {
     netWorthContribution: 0,
@@ -143,8 +178,13 @@ function getValueFromResolvedConfig(type, config, year, inflationRate, inflation
       const activeYears = Math.min(elapsedYear, Number(config.years || 0));
       const monthlyDeposit = Number(config.monthlyDeposit || 0);
       const annualRate = Number(config.rate || 0) / 100;
-      const value = fvSip(monthlyDeposit, annualRate, activeYears * 12);
-      const invested = monthlyDeposit * activeYears * 12;
+      const { value, invested } = calculateRecurringDepositValue(
+        monthlyDeposit,
+        annualRate,
+        activeYears,
+        config.depositFrequency || 'monthly',
+        config.compoundingFrequency || 'monthly',
+      );
       return { netWorthContribution: adjustForInflation(value, inflationRate, elapsedYear, inflationAdjusted), monthlyInvestment: elapsedYear <= Number(config.years || 0) ? monthlyDeposit : 0, monthlyPayment: 0, monthlyWithdrawal: 0, invested, returns: value - invested };
     }
     case 'Lumpsum': {
@@ -159,9 +199,8 @@ function getValueFromResolvedConfig(type, config, year, inflationRate, inflation
     }
     case 'PPF': {
       const activeYears = Math.min(elapsedYear, Number(config.years || 15));
-      const monthlyAmount = Number(config.monthlyAmount || 0);
-      const value = fvSip(monthlyAmount, Number(config.interestRate || 0) / 100, activeYears * 12);
-      const invested = monthlyAmount * activeYears * 12;
+      const monthlyAmount = Math.min(Number(config.monthlyAmount || 0), 12500);
+      const { value, invested } = calculatePpfValue(monthlyAmount, Number(config.interestRate || 0) / 100, activeYears);
       return { netWorthContribution: adjustForInflation(value, inflationRate, elapsedYear, inflationAdjusted), monthlyInvestment: elapsedYear <= Number(config.years || 15) ? monthlyAmount : 0, monthlyPayment: 0, monthlyWithdrawal: 0, invested, returns: value - invested };
     }
     case 'SWP': {
@@ -174,19 +213,22 @@ function getValueFromResolvedConfig(type, config, year, inflationRate, inflation
       const months = Math.min(elapsedYear, totalYears) * 12;
       const monthlyRate = periodicRate(annualRate, 12);
       let corpus = Number(config.corpusAmount || 0);
+      let totalWithdrawn = 0;
 
       for (let month = 0; month < months && corpus > 0; month += 1) {
-        corpus = corpus * (1 + monthlyRate) - monthlyWithdrawal;
-        corpus = Math.max(0, corpus);
+        corpus *= 1 + monthlyRate;
+        const withdrawal = Math.min(monthlyWithdrawal, corpus);
+        corpus -= withdrawal;
+        totalWithdrawn += withdrawal;
       }
 
       return {
         netWorthContribution: adjustForInflation(corpus, inflationRate, elapsedYear, inflationAdjusted),
         monthlyInvestment: 0,
         monthlyPayment: 0,
-        monthlyWithdrawal: elapsedYear < totalYears ? monthlyWithdrawal : 0,
+        monthlyWithdrawal: elapsedYear <= totalYears && corpus > 0 ? monthlyWithdrawal : 0,
         invested: Number(config.corpusAmount || 0),
-        returns: corpus + monthlyWithdrawal * months - Number(config.corpusAmount || 0),
+        returns: corpus + totalWithdrawn - Number(config.corpusAmount || 0),
       };
     }
     default:

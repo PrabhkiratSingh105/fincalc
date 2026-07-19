@@ -1,4 +1,3 @@
-import { periodicRate } from '../utils/finance';
 import { formatINR, formatPercent, parseNum } from '../utils/format';
 import { buildInsights } from '../utils/calculatorHelpers';
 
@@ -78,7 +77,8 @@ export function calculate(inputs) {
     investedSeries.push(Math.round(invested));
   }
 
-  const periodic = periodicRate(rate, paymentsPerYear);
+  const effectiveAnnualRate = Math.pow(1 + rate / compoundingPerYear, compoundingPerYear) - 1;
+  const periodic = Math.pow(1 + effectiveAnnualRate, 1 / paymentsPerYear) - 1;
 
   return {
     summary: [

@@ -5,24 +5,30 @@ import { buildInsights } from '../utils/calculatorHelpers';
 const PPF_YEARS = 15;
 
 export function calculate(inputs) {
-  const monthlyAmount = parseNum(inputs.monthlyAmount, 12500);
+  const monthlyAmount = Math.min(parseNum(inputs.monthlyAmount, 12500), 12500);
   const interestRate = parseNum(inputs.interestRate, 7) / 100;
   const inflation = parseNum(inputs.inflation, 6) / 100;
   const months = PPF_YEARS * 12;
   const r = periodicRate(interestRate, 12);
 
   let corpus = 0;
+  let accruedInterest = 0;
   let deposited = 0;
   let inflationAdjustedDeposited = 0;
   const yearlyRaw = [];
   const rows = [];
 
   for (let mo = 1; mo <= months; mo++) {
-    corpus = (corpus + monthlyAmount) * (1 + r);
+    corpus += monthlyAmount;
+    // PPF interest accrues monthly on the eligible balance and is credited at
+    // the end of each financial year, rather than compounded every month.
+    accruedInterest += corpus * r;
     deposited += monthlyAmount;
     inflationAdjustedDeposited += monthlyAmount / Math.pow(1 + inflation, (months - mo + 1) / 12);
     if (mo % 12 === 0) {
       const yr = mo / 12;
+      corpus += accruedInterest;
+      accruedInterest = 0;
       const interest = corpus - deposited;
       yearlyRaw.push({ year: yr, deposited, inflationAdjustedDeposited, corpus, interest });
       rows.push([
@@ -51,8 +57,8 @@ export function calculate(inputs) {
     ],
     steps: [
       `Monthly deposit = ${formatINR(monthlyAmount)} for ${PPF_YEARS} years (${months} months)`,
-      `PPF uses monthly compounding: balance = (balance + deposit) × (1 + r_m)`,
-      `Monthly rate = (1 + ${formatPercent(interestRate * 100)})^(1/12) − 1 = ${formatPercent(r * 100, 4)}`,
+      'PPF interest is calculated monthly and credited at each year-end',
+      `Monthly interest rate = ${formatPercent(interestRate * 100)} / 12 = ${formatPercent(r * 100, 4)}`,
       `Total deposited = ${formatINR(Math.round(deposited))}; Interest = ${formatINR(Math.round(interest))}`,
       `Maturity = ${formatINR(Math.round(corpus))}; Real value = ${formatINR(Math.round(inflationAdjusted))}`,
     ],
@@ -103,7 +109,7 @@ export function calculate(inputs) {
         'Deposit before the 5th of each month to earn interest for that month.',
         'PPF suits long-term, risk-free allocation alongside equity SIP.',
       ],
-      formula: 'Balance_m = (Balance_{m-1} + Deposit) × (1 + r_monthly)',
+      formula: 'Year-end balance = opening balance + monthly deposits + interest credited annually',
       example: '₹12,500/month at 7.1% for 15 years → ~₹40L maturity on ~₹22.5L deposited.',
       inflation: `Real value of maturity: ${formatINR(Math.round(inflationAdjusted))} in today's rupees.`,
       tax: 'PPF enjoys EEE tax status — no tax on interest or withdrawal.',

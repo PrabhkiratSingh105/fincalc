@@ -25,8 +25,10 @@ export function calculate(inputs) {
   let depletedYear = null;
 
   for (let month = 1; month <= months; month += 1) {
-    corpus = corpus * (1 + monthlyRate) - monthlyWithdrawal;
-    totalWithdrawn += monthlyWithdrawal;
+    corpus *= 1 + monthlyRate;
+    const withdrawalThisMonth = Math.min(monthlyWithdrawal, corpus);
+    corpus -= withdrawalThisMonth;
+    totalWithdrawn += withdrawalThisMonth;
 
     if (month % 12 === 0 && corpus > 0 && expenseRatio > 0) {
       const afterExpense = corpus * (1 - expenseRatio);
@@ -77,7 +79,7 @@ export function calculate(inputs) {
     steps: [
       `Initial corpus = ${formatINR(corpusAmount)}; monthly withdrawal = ${formatINR(monthlyWithdrawal)}`,
       `Monthly return = ${formatPercent(ratePercentage * 100)} / 12 = ${formatPercent(monthlyRate * 100, 4)}`,
-      `Each month: Corpus = Corpus x (1 + r_m) - Withdrawal`,
+      `Each month: Corpus = Corpus x (1 + r_m) - actual withdrawal (capped at the available corpus)`,
       `Expense ratio ${formatPercent(expenseRatio * 100)} is deducted at each year-end from remaining corpus`,
       `After ${years} years: withdrawn ${formatINR(Math.round(totalWithdrawn))}, remaining ${formatINR(Math.round(corpus))}`,
       `Gain = withdrawn + remaining - initial = ${formatINR(Math.round(gain))}; tax = ${formatINR(Math.round(taxAmount))}`,
@@ -87,7 +89,7 @@ export function calculate(inputs) {
       'Constant return rate; actual market returns vary',
       'Expense ratio deducted annually from the remaining corpus',
       'LTCG tax applied once on net gains with Rs1.25L exemption',
-      'No additional contributions during withdrawal phase',
+      'No additional contributions during withdrawal phase; withdrawals stop when the corpus is exhausted',
     ],
     charts: [
       {

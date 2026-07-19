@@ -1,0 +1,30 @@
+
+> PlanMyCapital@1.0.0 dev
+> concurrently -n api,web -c blue,green "npm run server:dev" "npm run react"
+
+[web] 
+[web] > PlanMyCapital@1.0.0 react
+[web] > react-scripts start
+[web] 
+[api] 
+[api] > PlanMyCapital@1.0.0 server:dev
+[api] > cross-env PORT=3001 node server.js
+[api] 
+[api] PlanMyCapital is running at http://localhost:3001 [React build]
+[web] (node:10196) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+[web] (Use `node --trace-deprecation ...` to show where the warning was created)
+[web] (node:10196) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+[web] (node:10196) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+[web] Starting the development server...
+[web] 
+[web] Compiled successfully!
+[web] 
+[web] You can now view PlanMyCapital in the browser.
+[web] 
+[web]   Local:            http://localhost:3000
+[web]   On Your Network:  http://192.168.1.6:3000
+[web] 
+[web] Note that the development build is not optimized.
+[web] To create a production build, use npm run build.
+[web] 
+[web] webpack compiled [1m[32msuccessfully[39m[22m

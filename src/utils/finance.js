@@ -1,5 +1,7 @@
 export function periodicRate(annualRate, periodsPerYear = 12) {
-  return Math.pow(1 + annualRate, 1 / periodsPerYear) - 1;
+  // Rates quoted for Indian loans, SIPs and SWPs are conventionally nominal
+  // annual rates, so the periodic rate is r / periods.
+  return annualRate / periodsPerYear;
 }
 
 export function emi(principal, annualRate, months) {
