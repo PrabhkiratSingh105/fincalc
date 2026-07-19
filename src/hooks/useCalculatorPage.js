@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import {
   fetchPublicConfig,
 } from '../utils/share';
-import { downloadPdfReport } from '../utils/pdfExport';
 
 export function useCalculatorPage(calcId, defaults, calculateFn) {
   const { username, configName } = useParams();
@@ -55,8 +54,9 @@ export function useCalculatorPage(calcId, defaults, calculateFn) {
 
   const results = useMemo(() => calculateFn(inputs), [inputs, calculateFn]);
 
-  const handlePdf = () => {
+  const handlePdf = async () => {
     if (results?.pdfData) {
+      const { downloadPdfReport } = await import('../utils/pdfExport');
       downloadPdfReport({
         ...results.pdfData,
         steps: results.steps,

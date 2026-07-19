@@ -1,40 +1,76 @@
-import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { SpeedInsights } from '@vercel/speed-insights/react';
-import { Analytics } from '@vercel/analytics/react';
-import Clarity from '@microsoft/clarity';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
+import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Header from './components/Header';
 import AuthModal from './components/AuthModal';
 import Home from './pages/Home';
-import SIPCalculator from './pages/SIPCalculator';
-import LumpsumCalculator from './pages/LumpsumCalculator';
-import SWPCalculator from './pages/SWPCalculator';
-import LoanCalculator from './pages/LoanCalculator';
-import PPFCalculator from './pages/PPFCalculator';
-import RetirementCalculator from './pages/RetirementCalculator';
-import GoalSipCalculator from './pages/GoalSipCalculator';
-import InflationCalculator from './pages/InflationCalculator';
-import CagrCalculator from './pages/CagrCalculator';
-import LoanPrepaymentCalculator from './pages/LoanPrepaymentCalculator';
-import LoanEligibilityCalculator from './pages/LoanEligibilityCalculator';
-import IncomeTaxCalculator from './pages/IncomeTaxCalculator';
-import FdCalculator from './pages/FdCalculator';
-import RdCalculator from './pages/RdCalculator';
-import ProfilePage from './pages/ProfilePage';
-import CustomInflationCalculator from './pages/CustomInflationCalculator';
-import PortfolioDetailsPage from './pages/PortfolioDetailsPage';
-import PortfolioLibraryPage from './pages/PortfolioLibraryPage';
+import RouteMeta from './components/RouteMeta';
 import './styles/main.css';
 import './styles/calculator.css';
 
 const clarityProjectId = process.env.REACT_APP_CLARITY_PROJECT_ID;
 const enableVercelInsights = process.env.REACT_APP_ENABLE_VERCEL_INSIGHTS === 'true';
+const SIPCalculator = lazy(() => import('./pages/SIPCalculator'));
+const LumpsumCalculator = lazy(() => import('./pages/LumpsumCalculator'));
+const SWPCalculator = lazy(() => import('./pages/SWPCalculator'));
+const LoanCalculator = lazy(() => import('./pages/LoanCalculator'));
+const PPFCalculator = lazy(() => import('./pages/PPFCalculator'));
+const RetirementCalculator = lazy(() => import('./pages/RetirementCalculator'));
+const GoalSipCalculator = lazy(() => import('./pages/GoalSipCalculator'));
+const InflationCalculator = lazy(() => import('./pages/InflationCalculator'));
+const CagrCalculator = lazy(() => import('./pages/CagrCalculator'));
+const LoanPrepaymentCalculator = lazy(() => import('./pages/LoanPrepaymentCalculator'));
+const LoanEligibilityCalculator = lazy(() => import('./pages/LoanEligibilityCalculator'));
+const IncomeTaxCalculator = lazy(() => import('./pages/IncomeTaxCalculator'));
+const FdCalculator = lazy(() => import('./pages/FdCalculator'));
+const RdCalculator = lazy(() => import('./pages/RdCalculator'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const CustomInflationCalculator = lazy(() => import('./pages/CustomInflationCalculator'));
+const PortfolioDetailsPage = lazy(() => import('./pages/PortfolioDetailsPage'));
+const PortfolioLibraryPage = lazy(() => import('./pages/PortfolioLibraryPage'));
+const SpeedInsights = lazy(() => import('@vercel/speed-insights/react').then(({ SpeedInsights: Component }) => ({ default: Component })));
+const Analytics = lazy(() => import('@vercel/analytics/react').then(({ Analytics: Component }) => ({ default: Component })));
 
-if (clarityProjectId && clarityProjectId !== 'yourProjectId') {
-  Clarity.init(clarityProjectId);
+function PageLoader() {
+  return (
+    <main className="page page-loader" aria-live="polite" aria-label="Loading page">
+      <div className="page-loader-mark"><span /></div>
+      <p>Preparing your workspace</p>
+    </main>
+  );
+}
+
+class AppErrorBoundary extends React.Component {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    // Preserve the existing app flow while exposing errors to the browser console for support.
+    console.error('PlanMyCapital page error', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <main className="page app-error-state" role="alert">
+          <div className="app-state-icon"><span className="material-symbols-rounded">error</span></div>
+          <span className="home-kicker">Something interrupted this view</span>
+          <h1>Let’s get you back on track.</h1>
+          <p>Your saved work is still available. Return home or refresh the page to try again.</p>
+          <div className="home-hero-actions">
+            <Link to="/" className="home-primary-action">Return home</Link>
+            <button type="button" className="home-secondary-action" onClick={() => window.location.reload()}>Refresh page</button>
+          </div>
+        </main>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 function fillRangeSlider(el) {
@@ -73,15 +109,33 @@ function RangeSliderSync() {
 function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  useEffect(() => {
+    if (!clarityProjectId || clarityProjectId === 'yourProjectId') return undefined;
+
+    const loadClarity = () => {
+      import('@microsoft/clarity').then(({ default: Clarity }) => Clarity.init(clarityProjectId));
+    };
+    const idleCallback = window.requestIdleCallback?.(loadClarity, { timeout: 4000 });
+    const timeout = idleCallback ? null : window.setTimeout(loadClarity, 2000);
+
+    return () => {
+      if (idleCallback) window.cancelIdleCallback?.(idleCallback);
+      if (timeout) window.clearTimeout(timeout);
+    };
+  }, []);
+
   return (
     <ThemeProvider>
       <AuthProvider>
         <SettingsProvider>
           <BrowserRouter>
             <RangeSliderSync />
+            <RouteMeta />
             <Header setShowAuthModal={setShowAuthModal} />
             <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
-            <Routes>
+            <AppErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/portfolio" element={<PortfolioLibraryPage />} />
               <Route path="/portfolio/:portfolioId" element={<PortfolioDetailsPage />} />
@@ -115,9 +169,15 @@ function App() {
             <Route path="/rd" element={<RdCalculator />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/custom-inflation" element={<CustomInflationCalculator />} />
-            </Routes>
-            {enableVercelInsights && <SpeedInsights />}
-            {enableVercelInsights && <Analytics />}
+                </Routes>
+              </Suspense>
+            </AppErrorBoundary>
+            {enableVercelInsights && (
+              <Suspense fallback={null}>
+                <SpeedInsights />
+                <Analytics />
+              </Suspense>
+            )}
           </BrowserRouter>
         </SettingsProvider>
       </AuthProvider>

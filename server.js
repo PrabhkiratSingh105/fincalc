@@ -100,7 +100,18 @@ function normalizePortfolioCalendarYear(value, fallback = getPortfolioBaseYear()
 
 // Serve production React build only when it exists (avoids empty shell page)
 if (fs.existsSync(BUILD_DIR)) {
-  app.use(express.static(BUILD_DIR));
+  app.use(express.static(BUILD_DIR, {
+    setHeaders: (res, filePath) => {
+      const relativePath = path.relative(BUILD_DIR, filePath).replace(/\\/g, '/');
+      if (relativePath.startsWith('static/')) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (path.basename(filePath) === 'favicon.png') {
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+      } else {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    },
+  }));
 }
 
 function loadEnv() {

@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { lazy, Suspense, useMemo, useState } from 'react';
 import SavedConfigsPanel from '../SavedConfigsPanel';
-import ChartPanel from './ChartPanel';
 import { useCalculatorPage } from '../../hooks/useCalculatorPage';
 import { formatIndianNumberInput, toNumber } from '../../utils/format';
 import { useSettings } from '../../context/SettingsContext';
+
+const ChartPanel = lazy(() => import('./ChartPanel'));
 
 function getRangeFillStyle(field, value) {
   const min = Number(field.min ?? 0);
@@ -369,7 +370,9 @@ export default function CalculatorLayout({
           <div className="calc-charts-grid">
             {results.charts.map((chart, i) => (
               <div className="card" key={i}>
-                <ChartPanel chart={chart} />
+                <Suspense fallback={null}>
+                  <ChartPanel chart={chart} />
+                </Suspense>
               </div>
             ))}
           </div>

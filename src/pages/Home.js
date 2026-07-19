@@ -86,13 +86,36 @@ export default function Home() {
   return (
     <main className="page home-page" aria-label="Home">
       <section className="home-shell">
-        <div className="home-intro">
-          <div>
-            <span className="home-kicker">Investment calculators</span>
-            <h1>Choose what you want to calculate.</h1>
-            <p>SIP, lumpsum, deposits, withdrawals, loans, and tax tools are ready from the home page.</p>
+        <section className="home-intro" aria-labelledby="home-title">
+          <div className="home-intro-copy">
+            <span className="home-kicker">PlanMyCapital / Financial clarity</span>
+            <h1 id="home-title">Make every financial decision easier to see.</h1>
+            <p>Practical calculators for investing, borrowing, tax, and long-term goals—built around the numbers that matter.</p>
+            <div className="home-hero-actions">
+              <Link to="/sip" className="home-primary-action">
+                Start an investment plan
+                <span className="material-symbols-rounded">arrow_forward</span>
+              </Link>
+              <Link to="/portfolio" className="home-secondary-action">
+                Explore portfolios
+              </Link>
+            </div>
           </div>
-          
+          <div className="home-hero-detail" aria-label="Plan with confidence">
+            <div className="home-detail-eyebrow">A clearer view of your money</div>
+            <div className="home-detail-number">15+</div>
+            <p>Specialist calculators, from the first SIP to a complete retirement plan.</p>
+            <div className="home-detail-rule" />
+            <span>INR-first · Privacy-conscious · No account required to calculate</span>
+          </div>
+        </section>
+
+        <div className="home-tools-intro">
+          <div>
+            <span className="home-kicker">Start here</span>
+            <h2>Investment planning</h2>
+          </div>
+          <p>Choose a calculator, set your assumptions, and get a decision-ready view in moments.</p>
         </div>
 
         {isMobile ? (

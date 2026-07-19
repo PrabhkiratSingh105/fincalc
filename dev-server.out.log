@@ -28,3 +28,38 @@
 [web] To create a production build, use npm run build.
 [web] 
 [web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Failed to compile.
+[web] 
+[web] Module not found: Error: Can't resolve './components/RouteMeta' in 'C:\Users\Dell\Documents\FinCalc\src'
+[web] [1m[31mERROR[39m[22m in [1m./src/App.js[39m[22m [1m[32m14:0-47[39m[22m
+[web] [1mModule [1m[31mnot found[39m[22m[1m: [1m[31mError[39m[22m[1m: Can't resolve './components/RouteMeta' in 'C:\Users\Dell\Documents\FinCalc\src'[39m[22m
+[web] 
+[web] webpack compiled with [1m[31m1 error[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m
+[web] Compiling...
+[web] Compiled successfully!
+[web] webpack compiled [1m[32msuccessfully[39m[22m

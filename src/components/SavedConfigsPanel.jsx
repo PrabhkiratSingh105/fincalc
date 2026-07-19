@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { downloadPdfReport } from "../utils/pdfExport";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "./AuthModal";
 import { API } from "../config";
@@ -236,8 +235,9 @@ export default function SavedConfigsPanel({
     }
   };
 
-  const handlePdfReport = () => {
+  const handlePdfReport = async () => {
     if (results?.pdfData) {
+      const { downloadPdfReport } = await import('../utils/pdfExport');
       downloadPdfReport({
         ...results.pdfData,
         steps: results.steps,
