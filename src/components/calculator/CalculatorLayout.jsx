@@ -209,7 +209,6 @@ export default function CalculatorLayout({
   onInfoButtonClick,
 }) {
   const { settings } = useSettings();
-  const [mobileScreen, setMobileScreen] = useState('input');
   const [openSections, setOpenSections] = useState({});
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 640);
   const [resultInflationMode, setResultInflationMode] = useState('on');
@@ -250,12 +249,6 @@ export default function CalculatorLayout({
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-
-  React.useEffect(() => {
-    if (!isMobile) {
-      setMobileScreen('input');
-    }
-  }, [isMobile]);
 
   const getConfig = () => inputs;
   const applyConfig = (config) => setInputs({ ...resolvedDefaults, ...config });
@@ -325,10 +318,10 @@ export default function CalculatorLayout({
           />
         ));
 
-  const renderResults = () =>
+  const renderResults = ({ summary = true, details = true } = {}) =>
     results && (
       <>
-        <div className="card calc-summary-card">
+        {summary && <div className="card calc-summary-card">
           <div className="calc-summary-head-row">
             <div className="slbl">Results Summary</div>
             {hasInflationField && (
@@ -364,9 +357,9 @@ export default function CalculatorLayout({
               </div>
             ))}
           </div>
-        </div>
+        </div>}
 
-        {results.charts?.length > 0 && (
+        {details && results.charts?.length > 0 && (
           <div className="calc-charts-grid">
             {results.charts.map((chart, i) => (
               <div className="card" key={i}>
@@ -378,7 +371,7 @@ export default function CalculatorLayout({
           </div>
         )}
 
-        {!isMobile &&
+        {details && !isMobile &&
           [results.yearlyTable, results.depletionTable, ...(results.yearlyTables || [])]
             .filter(Boolean)
             .map((table, ti) => (
@@ -407,7 +400,7 @@ export default function CalculatorLayout({
               </div>
             ))}
 
-        {!isMobile && (
+        {details && !isMobile && (
           <>
             <div className="calc-detail-grid">
               {results.steps?.length > 0 && (
@@ -461,31 +454,15 @@ export default function CalculatorLayout({
       </div>
 
       <div className="calc-body">
-        {(!isMobile || mobileScreen === 'input') && (
-          <aside className="card calc-inputs-panel">
-            {renderInputSections()}
-            {isMobile && (
-              <>
-                <button type="button" className="mini-btn primary calc-mobile-cta" onClick={() => setMobileScreen('output')}>
-                  Continue
-                </button>
-                {renderSavedConfigs()}
-              </>
-            )}
-          </aside>
-        )}
+        {isMobile && <main className="calc-results-panel calc-mobile-overview">{renderResults({ details: false })}</main>}
 
-        {(!isMobile || mobileScreen === 'output') && (
-          <main className="calc-results-panel">
-            {isMobile && (
-              <button type="button" className="calc-mobile-back" onClick={() => setMobileScreen('input')}>
-                <span className="material-symbols-rounded">arrow_back</span>
-                Back
-              </button>
-            )}
-            {renderResults()}
-          </main>
-        )}
+        <aside className="card calc-inputs-panel">
+          {renderInputSections()}
+          {isMobile && renderSavedConfigs()}
+        </aside>
+
+        {!isMobile && <main className="calc-results-panel">{renderResults()}</main>}
+        {isMobile && <main className="calc-results-panel calc-mobile-details">{renderResults({ summary: false })}</main>}
       </div>
     </div>
   );

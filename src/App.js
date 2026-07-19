@@ -30,6 +30,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const CustomInflationCalculator = lazy(() => import('./pages/CustomInflationCalculator'));
 const PortfolioDetailsPage = lazy(() => import('./pages/PortfolioDetailsPage'));
 const PortfolioLibraryPage = lazy(() => import('./pages/PortfolioLibraryPage'));
+const CategoryPage = lazy(() => import('./pages/CategoryPage'));
 const SpeedInsights = lazy(() => import('@vercel/speed-insights/react').then(({ SpeedInsights: Component }) => ({ default: Component })));
 const Analytics = lazy(() => import('@vercel/analytics/react').then(({ Analytics: Component }) => ({ default: Component })));
 
@@ -138,6 +139,9 @@ function App() {
                 <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/portfolio" element={<PortfolioLibraryPage />} />
+              <Route path="/invest" element={<CategoryPage category="invest" />} />
+              <Route path="/plan" element={<CategoryPage category="plan" />} />
+              <Route path="/loans" element={<CategoryPage category="loans" />} />
               <Route path="/portfolio/:portfolioId" element={<PortfolioDetailsPage />} />
             <Route path="/sip/:username/config/:configName" element={<SIPCalculator />} />
             <Route path="/sip" element={<SIPCalculator />} />

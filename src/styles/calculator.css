@@ -1113,3 +1113,47 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 14px; background: v
   .calc-summary-value { text-align: left; }
   .calc-chart-wrap { min-height: 220px; }
 }
+
+/* Phone calculator workspace. Inputs retain their existing two-step flow;
+   this only gives it the spacing and tap targets of a focused mobile app. */
+@media (max-width: 720px) {
+  .calc-page .ph { display: block; padding: 18px 16px 14px; }
+  .calc-page .ph h1 { font-size: clamp(25px, 7.3vw, 31px); }
+  .calc-page .ph p { display: block; font-size: 13px; }
+  .calc-body { gap: 14px; padding: 0 14px 24px; }
+  .calc-inputs-panel, .calc-summary-card { padding: 16px; border-radius: 16px; }
+  .calc-inputs-panel { position: static; border-top-width: 3px; }
+  .calc-input-section + .calc-input-section { margin-top: 20px; }
+  .calc-input-section-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
+  .calc-input-label-row { min-height: 30px; margin-bottom: 5px; }
+  .calc-label { font-size: 11px; line-height: 1.25; }
+  .calc-input { height: 44px; font-size: 13px; padding-left: 11px; padding-right: 11px; }
+  .calc-input-wrapper.has-suffix .calc-input { padding-right: 34px; }
+  .calc-input-suffix { right: 11px; }
+  .calc-input-group input[type='range'] { height: 30px; margin-top: 7px; }
+  .calc-mobile-cta { position: sticky; bottom: 10px; min-height: 48px; margin-top: 20px; box-shadow: 0 8px 20px rgba(10, 107, 78, 0.18); }
+  .calc-action-row { gap: 8px; }
+  .calc-action-row .mini-btn { min-height: 42px; }
+  .calc-mobile-back { padding: 2px 0 7px; color: var(--green); }
+  .calc-summary-head-row { gap: 8px; margin-bottom: 12px; }
+  .calc-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .calc-summary-item { min-height: 94px; padding: 12px; }
+  .calc-summary-item.is-featured { min-height: 114px; padding: 16px; }
+  .calc-summary-item.is-featured .calc-summary-value { font-size: clamp(26px, 8.2vw, 34px); }
+  .calc-summary-label { font-size: 9px; }
+  .calc-summary-value { font-size: 14px; }
+  .calc-summary-sub { font-size: 10px; }
+  .calc-charts-grid, .calc-detail-grid, .calc-insights-grid { grid-template-columns: 1fr; gap: 12px; }
+  .calc-charts-grid .card, .calc-table-card, .calc-detail-card { padding: 14px; border-radius: 14px; }
+  .calc-chart-wrap { min-height: 210px; }
+  .calc-table-wrap { margin: 0 -2px; border-radius: 12px; }
+  .calc-table { min-width: 560px; font-size: 12px; }
+  .calc-table th, .calc-table td { padding: 10px 12px; }
+}
+
+@media (max-width: 440px) {
+  .calc-input-section-grid { grid-template-columns: 1fr; gap: 14px; }
+  .calc-summary-grid { grid-template-columns: 1fr; }
+  .calc-summary-item { min-height: 78px; }
+  .calc-summary-item.is-featured { min-height: 108px; }
+}

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -43,6 +43,7 @@ export default function Header({ setShowAuthModal }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const headerRef = useRef(null);
   const navigate = useNavigate();
@@ -50,6 +51,7 @@ export default function Header({ setShowAuthModal }) {
   const handleCalcSelect = (path) => {
     navigate(`/${path}`);
     setOpenDropdown(null);
+    setMobileMenuOpen(false);
     setAccountMenuOpen(false);
   };
 
@@ -73,13 +75,25 @@ export default function Header({ setShowAuthModal }) {
   return (
     <header ref={headerRef}>
       <div className="h-inner">
+        <button
+          type="button"
+          className="mobile-menu-toggle"
+          onClick={() => {
+            setMobileMenuOpen(!mobileMenuOpen);
+            setAccountMenuOpen(false);
+          }}
+          aria-label="Open calculators menu"
+          aria-expanded={mobileMenuOpen}
+        >
+          <span className="material-symbols-rounded">{mobileMenuOpen ? 'close' : 'menu'}</span>
+        </button>
         <Link to="/" className="logo">
           <span className="logo-name">
             PlanMy<em>Capital</em>
           </span>
         </Link>
 
-        <nav>
+        <nav className={mobileMenuOpen ? 'mobile-open' : ''}>
           {NAV.map((group) => (
             <div
               key={group.id}
@@ -105,6 +119,14 @@ export default function Header({ setShowAuthModal }) {
               </div>
             </div>
           ))}
+          <button
+            type="button"
+            className="mobile-theme-toggle"
+            onClick={toggleTheme}
+          >
+            <span className="material-symbols-rounded">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
         </nav>
 
         <div className="h-right">
@@ -171,6 +193,20 @@ export default function Header({ setShowAuthModal }) {
           </div>
         </div>
       </div>
+      <nav className="mobile-bottom-nav" aria-label="Primary navigation">
+        {[
+          { to: '/', label: 'Home', icon: 'home', end: true },
+          { to: '/invest', label: 'Invest', icon: 'trending_up' },
+          { to: '/plan', label: 'Plan', icon: 'track_changes' },
+          { to: '/loans', label: 'Loans', icon: 'credit_card' },
+          { to: '/portfolio', label: 'Portfolio', icon: 'pie_chart' },
+        ].map((item) => (
+          <NavLink key={item.to} to={item.to} end={item.end} className="mobile-bottom-link">
+            <span className="material-symbols-rounded">{item.icon}</span>
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
     </header>
   );
 }
