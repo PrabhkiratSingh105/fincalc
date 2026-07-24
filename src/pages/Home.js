@@ -119,7 +119,7 @@ export default function Home() {
         </div>
 
         {isMobile ? (
-          <div className="home-compact-grid" aria-label="Investment options">
+          <div className="home-feature-grid" aria-label="Investment options">
             {investmentTools.map((item) => (
               <ToolLink key={item.path} item={item} featured />
             ))}

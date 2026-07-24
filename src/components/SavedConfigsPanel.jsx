@@ -19,6 +19,8 @@ export default function SavedConfigsPanel({
   getConfig,
   applyConfig,
   results,
+  showSave = true,
+  showLoad = true,
 }) {
   const { user, token, loading: authLoading } = useAuth();
   const [open, setOpen] = useState(false);
@@ -248,8 +250,8 @@ export default function SavedConfigsPanel({
 
   return (
     <>
-      <div className="history-actions">
-        <button
+      {(showSave || showLoad) && <div className="history-actions">
+        {showSave && <button
           type="button"
           className="mini-btn primary"
           onClick={() => {
@@ -261,8 +263,8 @@ export default function SavedConfigsPanel({
         >
           <span className="material-symbols-rounded">bookmark_add</span>
           Save Config
-        </button>
-        <button
+        </button>}
+        {showLoad && <button
           type="button"
           className="mini-btn"
           onClick={() => {
@@ -273,8 +275,8 @@ export default function SavedConfigsPanel({
         >
           <span className="material-symbols-rounded">folder_open</span>
           Open Config
-        </button>
-      </div>
+        </button>}
+      </div>}
 
       {authModalOpen && (
         <AuthModal

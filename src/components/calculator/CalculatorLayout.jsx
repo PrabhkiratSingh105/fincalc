@@ -128,6 +128,10 @@ function InputField({ field, value, onChange, suffix, onInfoButtonClick }) {
               value={value}
               style={getRangeFillStyle(field, value)}
               onChange={(e) => onChange(field.key, Number(e.target.value))}
+              onWheel={(e) => {
+                e.currentTarget.blur();
+                e.preventDefault();
+              }}
               className="calc-range-input"
             />
           )}
@@ -210,7 +214,8 @@ export default function CalculatorLayout({
 }) {
   const { settings } = useSettings();
   const [openSections, setOpenSections] = useState({});
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 640);
+  const [mobileScreen, setMobileScreen] = useState('input');
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 900);
   const [resultInflationMode, setResultInflationMode] = useState('on');
   const hasInflationField = fields.some((field) => field.key === 'inflation');
 
@@ -245,10 +250,14 @@ export default function CalculatorLayout({
   );
 
   React.useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth <= 640);
+    const onResize = () => setIsMobile(window.innerWidth <= 900);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+
+  React.useEffect(() => {
+    if (!isMobile) setMobileScreen('input');
+  }, [isMobile]);
 
   const getConfig = () => inputs;
   const applyConfig = (config) => setInputs({ ...resolvedDefaults, ...config });
@@ -433,7 +442,7 @@ export default function CalculatorLayout({
       </>
     );
 
-  const renderSavedConfigs = () => (
+  const renderSavedConfigs = (options) => (
     <div className="calc-action-row">
       <SavedConfigsPanel
         storageKey={id}
@@ -441,6 +450,7 @@ export default function CalculatorLayout({
         getConfig={getConfig}
         applyConfig={applyConfig}
         results={results}
+        {...options}
       />
     </div>
   );
@@ -454,15 +464,30 @@ export default function CalculatorLayout({
       </div>
 
       <div className="calc-body">
-        {isMobile && <main className="calc-results-panel calc-mobile-overview">{renderResults({ details: false })}</main>}
-
-        <aside className="card calc-inputs-panel">
+        {(!isMobile || mobileScreen === 'input') && <aside className="card calc-inputs-panel">
           {renderInputSections()}
-          {isMobile && renderSavedConfigs()}
-        </aside>
+          {isMobile && (
+            <>
+              {renderSavedConfigs({ showSave: false })}
+              <button type="button" className="mini-btn primary calc-find-button" onClick={() => setMobileScreen('output')}>
+                Find
+                <span className="material-symbols-rounded">arrow_forward</span>
+              </button>
+            </>
+          )}
+        </aside>}
 
         {!isMobile && <main className="calc-results-panel">{renderResults()}</main>}
-        {isMobile && <main className="calc-results-panel calc-mobile-details">{renderResults({ summary: false })}</main>}
+        {isMobile && mobileScreen === 'output' && (
+          <main className="calc-results-panel calc-mobile-results">
+            <button type="button" className="calc-mobile-back" onClick={() => setMobileScreen('input')}>
+              <span className="material-symbols-rounded">arrow_back</span>
+              Edit values
+            </button>
+            {renderResults()}
+            {renderSavedConfigs({ showLoad: false })}
+          </main>
+        )}
       </div>
     </div>
   );

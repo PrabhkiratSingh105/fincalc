@@ -87,13 +87,21 @@ export default function Header({ setShowAuthModal }) {
         >
           <span className="material-symbols-rounded">{mobileMenuOpen ? 'close' : 'menu'}</span>
         </button>
+        <button
+          type="button"
+          className="mobile-top-theme"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          <span className="material-symbols-rounded">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
+        </button>
         <Link to="/" className="logo">
           <span className="logo-name">
             PlanMy<em>Capital</em>
           </span>
         </Link>
 
-        <nav className={mobileMenuOpen ? 'mobile-open' : ''}>
+        <nav className={`desktop-main-nav ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           {NAV.map((group) => (
             <div
               key={group.id}

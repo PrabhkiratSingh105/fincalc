@@ -443,6 +443,10 @@ export default function PortfolioDetailsPage() {
                 max={PORTFOLIO_BASE_YEAR + 99}
                 value={selectedCalendarYear}
                 disabled={!canEdit}
+                onWheel={(event) => {
+                  event.currentTarget.blur();
+                  event.preventDefault();
+                }}
                 onChange={(event) =>
                   updatePortfolio({ ...portfolio, timelineYear: normalizePortfolioCalendarYear(event.target.value, PORTFOLIO_BASE_YEAR) })
                 }
