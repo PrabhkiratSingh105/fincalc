@@ -76,7 +76,7 @@ function ToolLink({ item, featured = false }) {
         <strong>{item.title}</strong>
         <span>{item.sub}</span>
       </span>
-      {item.tag ? <em>{item.tag}</em> : <span className="material-symbols-rounded home-tool-arrow">arrow_forward</span>}
+      
     </Link>
   );
 }

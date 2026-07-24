@@ -109,7 +109,7 @@ body {
 /* ── HEADER ── */
 header {
   position: fixed;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
   z-index: 200;
@@ -427,7 +427,7 @@ nav {
 
 /* ── PAGE WRAPPER ── */
 .page {
-  padding-top: 80px;
+  padding-top: 20px;
   max-width: 1280px;
   margin: 0 auto;
   padding-bottom: 60px;
@@ -2366,7 +2366,7 @@ input[type='range']::-moz-range-thumb {
   }
 
   .page {
-    padding-top: 122px;
+    padding-top: calc(var(--mobile-top-bar-height, 56px) + 6px);
   }
 
   .ph {
@@ -2749,8 +2749,8 @@ header {
 
 @media (max-width: 720px) {
   header { min-height: 106px; padding: 10px 16px; }
-  .page { padding-top: 124px; }
-  .home-page { padding-top: 106px; }
+  .page { padding-top: calc(var(--mobile-top-bar-height, 56px) + 6px); }
+  .home-page { padding-top: calc(var(--mobile-top-bar-height, 56px) + 6px); }
   .home-shell { padding: 0 12px; }
   .home-intro { min-height: 0; grid-template-columns: 1fr; gap: 32px; margin-bottom: 36px; padding: 30px 22px; border-radius: var(--radius-lg); }
   .home-intro h1 { font-size: clamp(38px, 11vw, 54px); }
@@ -2829,8 +2829,8 @@ header {
   }
   .account-pop { top: calc(100% + 7px); right: 0; }
 
-  .page { padding-top: calc(var(--mobile-header-height) + 12px); padding-bottom: 32px; }
-  .home-page { padding-top: var(--mobile-header-height); padding-bottom: 32px; }
+  .page { padding-top: calc(var(--mobile-top-bar-height, 56px) + 6px); padding-bottom: 32px; }
+  .home-page { padding-top: calc(var(--mobile-top-bar-height, 56px) + 6px); padding-bottom: 32px; }
   .ph { padding: 20px 16px 16px; }
   .ph h1 { font-size: clamp(25px, 7.6vw, 32px); line-height: 1.08; letter-spacing: -0.05em; }
   .ph p { font-size: 13px; line-height: 1.55; }
@@ -2938,6 +2938,35 @@ header {
 }
 
 /* Final phone controls: top is utilities, all navigation stays at the bottom. */
+@media (max-width: 720px) {
+  /* mobile sizing variables */
+  :root { --mobile-header-height: 72px; --mobile-nav-height: 74px; }
+
+  /* header adjustments */
+  header { height: var(--mobile-header-height); padding: 0 14px; }
+
+  /* show mobile controls, hide desktop nav */
+  .mobile-menu-toggle, .mobile-top-theme, .mobile-bottom-nav, .mobile-theme-toggle { display: grid; }
+  .h-inner > nav:not(.mobile-bottom-nav), .mobile-theme-toggle, .desktop-main-nav { display: none !important; }
+
+  /* mobile top controls */
+  .mobile-menu-toggle { width: 42px; height: 42px; place-items: center; border: 0; border-radius: 12px; background: transparent; color: var(--ink); cursor: pointer; }
+  .mobile-menu-toggle .material-symbols-rounded { font-size: 26px; }
+  .mobile-top-theme { grid-column: 1; width: 40px; height: 40px; place-items: center; border: 0; border-radius: 50%; background: var(--green-lt); color: var(--green); cursor: pointer; }
+
+  /* bottom navigation layout */
+  .mobile-bottom-nav { position: fixed; right: 0; bottom: 0; left: 0; z-index: 250; display: grid; grid-template-columns: repeat(5, 1fr); min-height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom)); padding: 7px 6px calc(7px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: 0 -8px 28px rgba(20, 34, 27, 0.09); backdrop-filter: blur(18px); }
+
+  .mobile-bottom-link { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); text-decoration: none; font-size: 12px; }
+  .mobile-bottom-link .material-symbols-rounded { font-size: 20px; }
+  .mobile-bottom-link[aria-current='page'], .mobile-bottom-link.active, .mobile-bottom-link:focus { color: var(--indigo); }
+
+  /* page spacing: top bar only at top, bottom nav at bottom */
+  .page { padding-top: calc(var(--mobile-top-bar-height, 56px) + 6px); padding-bottom: calc(var(--mobile-nav-height) + 20px); }
+  .home-page { padding-top: calc(var(--mobile-top-bar-height, 56px) + 6px); padding-bottom: calc(var(--mobile-nav-height) + 20px); }
+  .category-page { padding-top: calc(var(--mobile-top-bar-height, 56px) + 6px); }
+}
+
 @media (max-width: 900px) {
   .desktop-main-nav { display: none !important; }
   .h-inner { grid-template-columns: 42px minmax(0, 1fr) 42px; }
@@ -2962,7 +2991,7 @@ header {
   .home-tool-copy span { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .home-tool em { justify-self: end; align-self: center; margin: 0; }
 
-  .calc-page .ph { padding-top: 16px; }
+  .calc-page .ph { padding-top: 10px; }
   .calc-find-button { display: flex; width: 100%; min-height: 50px; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; border-radius: 13px; font-size: 15px; }
   .calc-mobile-results { width: 100%; }
   .calc-mobile-results .calc-mobile-back { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 10px; border: 0; background: transparent; color: var(--green); font-weight: 800; }
@@ -2971,7 +3000,7 @@ header {
   .calc-mobile-results .calc-summary-item.is-featured { grid-column: 1 / -1; }
   .calc-inputs-panel .history-actions, .calc-mobile-results .history-actions { grid-template-columns: 1fr; }
   .calc-inputs-panel .history-actions .mini-btn, .calc-mobile-results .history-actions .mini-btn { width: 100%; justify-content: center; }
-  input[type='range'] { touch-action: pan-y; }
+  input[type='range'] { touch-action: none; }
 
   .portfolio-page .ph { padding: 16px 16px 14px; text-align: left; }
   .portfolio-page .ph h1 { font-size: 28px; }
@@ -3081,10 +3110,10 @@ header {
   .mobile-bottom-link.active { color: var(--green); }
   .mobile-bottom-link.active .material-symbols-rounded { padding: 5px; border-radius: 50%; background: var(--green-lt); }
 
-  .page { padding-top: calc(var(--mobile-header-height) + 12px); padding-bottom: calc(var(--mobile-nav-height) + 24px); }
-  .home-page { padding-top: calc(var(--mobile-header-height) + 14px); padding-bottom: calc(var(--mobile-nav-height) + 24px); }
-  .category-page { padding-top: calc(var(--mobile-header-height) + 16px); }
-  .category-head { align-items: flex-start; padding: 12px 16px 20px; }
+  .page { padding-top: calc(var(--mobile-top-bar-height, 56px) + 6px); padding-bottom: calc(var(--mobile-nav-height) + 20px); }
+  .home-page { padding-top: calc(var(--mobile-top-bar-height, 56px) + 6px); padding-bottom: calc(var(--mobile-nav-height) + 20px); }
+  .category-page { padding-top: calc(var(--mobile-top-bar-height, 56px) + 6px); }
+  .category-head { align-items: flex-start; padding: 4px 16px 14px; }
   .category-head h1 { font-size: 39px; }
   .category-head p { margin-top: 11px; font-size: 14px; line-height: 1.55; }
   .category-free-note { flex: 0 0 auto; gap: 7px; padding: 10px; border-radius: 13px; }
@@ -3093,7 +3122,7 @@ header {
   .category-free-note div span { font-size: 9px; }
   .category-tabs { margin: 0 14px 20px; padding: 3px; border-radius: 13px; }
   .category-tabs span { padding: 10px 12px; font-size: 11px; }
-  .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 8px 14px 24px; }
+  .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0 14px 20px; }
   .category-tool { min-height: 226px; padding: 15px; border-radius: 16px; }
   .category-tool-icon { width: 46px; height: 46px; border-radius: 14px; font-size: 23px; }
   .category-tool-copy { margin-top: 17px; }
@@ -3101,7 +3130,7 @@ header {
   .category-tool-copy p { margin-top: 8px; font-size: 12px; line-height: 1.48; }
   .category-tool-action { padding-top: 13px; font-size: 12px; }
 
-  .calc-page .ph { padding: 16px 16px 12px; text-align: center; }
+  .calc-page .ph { padding: 10px 16px 12px; text-align: center; }
   .calc-page .ph h1 { font-size: 28px; }
   .calc-page .ph p { display: block; max-width: 340px; margin: 9px auto 0; font-size: 13px; }
   .calc-body { display: flex; flex-direction: column; gap: 16px; padding: 0 14px; }
@@ -3153,7 +3182,7 @@ header {
   .calc-mobile-results .calc-summary-item.is-featured { grid-column: 1 / -1; }
   .calc-inputs-panel .history-actions, .calc-mobile-results .history-actions { grid-template-columns: 1fr; }
   .calc-inputs-panel .history-actions .mini-btn, .calc-mobile-results .history-actions .mini-btn { width: 100%; justify-content: center; }
-  input[type='range'] { touch-action: pan-y; }
+  input[type='range'] { touch-action: none; }
 
   .portfolio-page .ph { padding: 16px 16px 14px; text-align: left; }
   .portfolio-page .ph h1 { font-size: 28px; }

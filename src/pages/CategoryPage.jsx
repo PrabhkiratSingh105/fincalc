@@ -52,11 +52,7 @@ export default function CategoryPage({ category }) {
           <div><strong>100% Free</strong><span>No sign-up required</span></div>
         </div>
       </section>
-      <div className="category-tabs" aria-label={`${collection.title} collection`}>
-        <span className="active">All {collection.title}</span>
-        <span>Calculators</span>
-        <span>Planning</span>
-      </div>
+      
       <section className="category-grid">
         {collection.tools.map((tool) => (
           <Link to={tool.path} className="category-tool" key={tool.path}>

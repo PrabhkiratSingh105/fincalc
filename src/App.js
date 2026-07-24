@@ -11,6 +11,7 @@ import Home from './pages/Home';
 import RouteMeta from './components/RouteMeta';
 import './styles/main.css';
 import './styles/calculator.css';
+import { attachMobileRangeBehavior, isMobileRangeContext } from './utils/mobileRangeSlider';
 
 const clarityProjectId = process.env.REACT_APP_CLARITY_PROJECT_ID;
 const enableVercelInsights = process.env.REACT_APP_ENABLE_VERCEL_INSIGHTS === 'true';
@@ -89,7 +90,10 @@ function RangeSliderSync() {
 
   useEffect(() => {
     const syncAll = () => {
-      document.querySelectorAll('input[type="range"]').forEach(fillRangeSlider);
+      document.querySelectorAll('input[type="range"]').forEach((el) => {
+        fillRangeSlider(el);
+        attachMobileRangeBehavior(el);
+      });
     };
 
     syncAll();
@@ -100,9 +104,15 @@ function RangeSliderSync() {
     };
     document.addEventListener('input', onInput);
 
+    const onResize = () => {
+      if (isMobileRangeContext()) syncAll();
+    };
+    window.addEventListener('resize', onResize);
+
     return () => {
       clearTimeout(timer);
       document.removeEventListener('input', onInput);
+      window.removeEventListener('resize', onResize);
     };
   }, [location.pathname]);
 

@@ -1,5 +1,5 @@
 :root {
-  /* no vars here - keep consistent with main.css */
+  --mobile-top-bar-height: 56px;
 }
 
 /* Mobile top fixed header shown only on small screens */
@@ -65,9 +65,9 @@
     display: flex;
   }
 
-  /* Keep existing header (bottom) as-is — but shift page content down so it won't be hidden behind the top bar */
+  /* Clear the fixed top bar only — main nav lives at the bottom on mobile */
   .page {
-    padding-top: 120px; /* increased to give breathing room for top fixed header and any page header */
+    padding-top: calc(var(--mobile-top-bar-height) + 6px);
   }
 }
 
