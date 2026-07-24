@@ -1,0 +1,77 @@
+:root {
+  /* no vars here - keep consistent with main.css */
+}
+
+/* Mobile top fixed header shown only on small screens */
+.mobile-top-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  z-index: 301;
+  background: var(--header-bg);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--header-border);
+  display: none; /* enabled on small screens by media query */
+  align-items: center;
+  padding: 0 14px;
+}
+
+.mobile-top-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobile-top-theme-btn,
+.mobile-top-auth-btn {
+  background: transparent;
+  border: none;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.mobile-top-logo {
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+}
+
+.mobile-top-logo .logo-name em {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-style: normal;
+}
+
+/* Make the top fixed header visible on mobile and small tablets */
+@media (max-width: 900px) {
+  .mobile-top-fixed {
+    display: flex;
+  }
+
+  /* Keep existing header (bottom) as-is — but shift page content down so it won't be hidden behind the top bar */
+  .page {
+    padding-top: 120px; /* increased to give breathing room for top fixed header and any page header */
+  }
+}
+
+/* Hide the new top header on large screens */
+@media (min-width: 901px) {
+  .mobile-top-fixed { display: none; }
+}

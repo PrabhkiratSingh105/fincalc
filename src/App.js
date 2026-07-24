@@ -4,6 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Header from './components/Header';
+import MobileFixedHeader from './components/MobileFixedHeader';
+import './styles/mobile-header.css';
 import AuthModal from './components/AuthModal';
 import Home from './pages/Home';
 import RouteMeta from './components/RouteMeta';
@@ -132,6 +134,7 @@ function App() {
           <BrowserRouter>
             <RangeSliderSync />
             <RouteMeta />
+            <MobileFixedHeader setShowAuthModal={setShowAuthModal} />
             <Header setShowAuthModal={setShowAuthModal} />
             <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
             <AppErrorBoundary>
