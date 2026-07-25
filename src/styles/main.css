@@ -20,6 +20,7 @@
   --muted2: #94A3B8;
   --header-bg: rgba(255, 255, 255, 0.82);
   --header-border: rgba(99, 102, 241, 0.12);
+  --desktop-header-height: 62px;
   --overlay: rgba(10, 15, 30, 0.42);
   --input-bg: #F8FAFF;
   --panel-tint: linear-gradient(160deg, rgba(255, 255, 255, 0.96) 0%, rgba(238, 242, 255, 0.86) 55%, rgba(240, 249, 255, 0.72) 100%);
@@ -113,13 +114,25 @@ header {
   left: 0;
   right: 0;
   z-index: 200;
-  height: 62px;
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid rgba(99, 102, 241, 0.12);
   display: flex;
   align-items: center;
   padding: 0 28px;
+}
+
+@media (min-width: 901px) {
+  header {
+    top: 0;
+    bottom: auto;
+    height: var(--desktop-header-height);
+    padding: 0 28px;
+  }
+
+  .page {
+    padding-top: calc(var(--desktop-header-height) + 20px);
+  }
 }
 
 .h-inner {
@@ -2596,7 +2609,7 @@ header {
 
 /* Landing */
 .home-page { max-width: none; padding: 68px 0 72px; }
-.home-shell { max-width: 1320px; padding: 0 32px; }
+.home-shell { max-width: 1320px; padding: 0 32px; margin-top:10px; }
 .home-intro {
   min-height: 410px;
   grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
