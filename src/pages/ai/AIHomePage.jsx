@@ -223,7 +223,7 @@ export default function AIHomePage() {
       <section className="ai-workspace">
         <div className="ai-thread">
           {chat ? <>
-            <header className="ai-thread-header"><div><span>{CONVERSATION_TYPES[activeType]?.label || 'Conversation'}</span><h1>{chat.title || 'New conversation'}</h1></div><button type="button" className="ai-rename-button" onClick={() => renameChat(chat)}><span className="material-symbols-rounded">edit</span>Rename</button></header>
+            
             {Object.values(chat.context || {}).some(Boolean) ? <SystemMessage>Relevant context is attached from your private FinCalc workspace.</SystemMessage> : null}
             <div className="ai-message-list">{(chat.messages || []).map((item, index) => <ChatBubble key={item.id || `${item.role}-${index}`} role={item.role}><RichText text={item.text} />{item.cards?.map((card, cardIndex) => card.type === 'draft' ? <DraftCard key={card.draftId || cardIndex} card={card} onSave={() => send('', 'confirm_save', card.draftId)} onDiscard={() => send('', 'discard_draft', card.draftId)} /> : <CalculatorResultCard key={`${card.title}-${cardIndex}`} card={card} onSave={() => send(`Save this ${card.title.replace(/^calculate/, '')} configuration for me.`)} />)}</ChatBubble>)}{loading ? <TypingIndicator /> : null}<div ref={messageEndRef} /></div>
             {!loading ? <SuggestedQuestions questions={suggestions} onSelect={send} /> : null}
