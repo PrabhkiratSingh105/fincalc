@@ -4,6 +4,8 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const OpenAI = require('openai');
+const { GoogleGenAI } = require('@google/genai');
 
 loadEnv();
 
@@ -12,6 +14,8 @@ app.set('trust proxy', true);
 app.use(cors());
 const PORT = process.env.PORT || 3000;
 const MAX_HISTORY_ITEMS = 50;
+const AI_MODEL = 'nvidia/nvidia-nemotron-nano-9b-v2';
+const AI_MAX_TOOL_ROUNDS = 3;
 const PLACEHOLDER_VALUES = new Set([
   '',
   'your_supabase_service_role_secret_jwt_here',
@@ -54,6 +58,22 @@ const supabase = createClient(
     },
   }
 );
+
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+
+function getNvidiaClient() {
+  const apiKey = process.env.NVIDIA_API_KEY;
+  if (!apiKey) return null;
+  return new OpenAI({ apiKey, baseURL: 'https://integrate.api.nvidia.com/v1' });
+}
+
+function friendlyAIError(error) {
+  const status = Number(error?.status || error?.statusCode || 0);
+  if (status === 401 || status === 403) return 'NVIDIA AI rejected the server credentials. Check NVIDIA_API_KEY.';
+  if (status === 429) return 'NVIDIA AI is temporarily rate-limited. Please wait a moment and try again.';
+  if (status >= 500 || /timeout|timed out|network|fetch failed/i.test(String(error?.message || ''))) return 'NVIDIA AI is temporarily unavailable. Please try again.';
+  return 'NVIDIA AI could not complete that request. Please try again.';
+}
 
 app.use(express.json({ limit: '20kb' }));
 
@@ -365,6 +385,130 @@ function normalizeSettings(input) {
   };
 }
 
+function defaultAIState() {
+  return { chats: [], goals: [], drafts: [], tokenUsage: { input: 0, output: 0, cached: 0 } };
+}
+
+function normalizeAIState(input) {
+  const safe = input && typeof input === 'object' ? input : {};
+  return {
+    chats: Array.isArray(safe.chats) ? safe.chats.slice(0, 100).map((chat) => ({
+      id: String(chat.id || crypto.randomUUID()),
+      title: String(chat.title || 'New chat').slice(0, 100),
+      type: String(chat.type || 'general'),
+      pinned: Boolean(chat.pinned),
+      createdAt: chat.createdAt || new Date().toISOString(),
+      updatedAt: chat.updatedAt || new Date().toISOString(),
+      summary: String(chat.summary || '').slice(0, 1800),
+      messages: Array.isArray(chat.messages) ? chat.messages.slice(-30).map((message) => ({
+        id: String(message.id || crypto.randomUUID()), role: message.role === 'assistant' ? 'assistant' : 'user',
+        text: String(message.text || '').slice(0, 8000), createdAt: message.createdAt || new Date().toISOString(),
+        actions: Array.isArray(message.actions) ? message.actions.slice(0, 6) : [], cards: Array.isArray(message.cards) ? message.cards.slice(0, 4) : [],
+      })) : [],
+      context: chat.context && typeof chat.context === 'object' ? chat.context : {},
+    })) : [],
+    goals: Array.isArray(safe.goals) ? safe.goals.slice(0, 100) : [],
+    drafts: Array.isArray(safe.drafts) ? safe.drafts.slice(0, 100) : [],
+    tokenUsage: safe.tokenUsage && typeof safe.tokenUsage === 'object' ? safe.tokenUsage : { input: 0, output: 0, cached: 0 },
+  };
+}
+
+function getAIState(user) {
+  user.ai = normalizeAIState(user.ai);
+  return user.ai;
+}
+
+function compactResult(result) {
+  return {
+    summary: Array.isArray(result?.summary) ? result.summary.slice(0, 6).map(({ label, value, sub }) => ({ label, value, sub })) : [],
+    assumptions: Array.isArray(result?.assumptions) ? result.assumptions.slice(0, 3) : [],
+  };
+}
+
+function n(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
+function money(value) { return `₹${Math.round(n(value)).toLocaleString('en-IN')}`; }
+function futureValueLumpsum({ amount = 0, rate = 12, years = 10 }) { return n(amount) * Math.pow(1 + n(rate) / 100, n(years)); }
+function futureValueSip({ monthlyAmount = 0, rate = 12, years = 10 }) {
+  const monthlyRate = n(rate) / 1200; const months = Math.max(0, Math.round(n(years) * 12));
+  return monthlyRate === 0 ? n(monthlyAmount) * months : n(monthlyAmount) * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate) * (1 + monthlyRate);
+}
+function calculatorResult(kind, input = {}) {
+  const rate = n(input.ratePercentage ?? input.rate ?? input.interestRate, 12);
+  const years = Math.max(0, n(input.years, 10));
+  if (kind === 'calculateSIP' || kind === 'calculateStepUpSIP' || kind === 'calculateGoal') {
+    const monthlyAmount = n(input.monthlyAmount, 0); const initialLumpsum = n(input.initialLumpsum, 0);
+    const value = futureValueSip({ monthlyAmount, rate, years }) + futureValueLumpsum({ amount: initialLumpsum, rate, years });
+    const invested = monthlyAmount * years * 12 + initialLumpsum;
+    return { summary: [{ label: kind === 'calculateGoal' ? 'Projected value' : 'Projected corpus', value: money(value) }, { label: 'Amount invested', value: money(invested) }, { label: 'Estimated growth', value: money(value - invested) }], assumptions: [`${rate}% annual return`, `${years} year horizon`] };
+  }
+  if (kind === 'calculateLumpsum') {
+    const amount = n(input.amount ?? input.principal, 0); const value = futureValueLumpsum({ amount, rate, years });
+    return { summary: [{ label: 'Maturity value', value: money(value) }, { label: 'Investment', value: money(amount) }, { label: 'Estimated growth', value: money(value - amount) }], assumptions: [`${rate}% annual return`, `${years} year horizon`] };
+  }
+  if (kind === 'calculateEMI') {
+    const principal = n(input.loanAmount, 0); const months = Math.max(1, Math.round(years * 12)); const monthlyRate = rate / 1200;
+    const emi = monthlyRate === 0 ? principal / months : principal * monthlyRate * Math.pow(1 + monthlyRate, months) / (Math.pow(1 + monthlyRate, months) - 1);
+    return { summary: [{ label: 'Monthly EMI', value: money(emi) }, { label: 'Total interest', value: money(emi * months - principal) }, { label: 'Total payment', value: money(emi * months) }], assumptions: [`${rate}% fixed annual interest`, `${years} year tenure`] };
+  }
+  if (kind === 'calculateFD' || kind === 'calculatePPF') {
+    const principal = n(input.principal ?? input.monthlyAmount * 12 * years, 0); const value = futureValueLumpsum({ amount: principal, rate, years });
+    return { summary: [{ label: 'Estimated maturity', value: money(value) }, { label: 'Principal', value: money(principal) }, { label: 'Interest earned', value: money(value - principal) }], assumptions: [`${rate}% annual rate`, `${years} year term`] };
+  }
+  if (kind === 'calculateRD') {
+    const value = futureValueSip({ monthlyAmount: n(input.monthlyDeposit ?? input.monthlyAmount, 0), rate, years });
+    return { summary: [{ label: 'Estimated maturity', value: money(value) }, { label: 'Monthly deposit', value: money(n(input.monthlyDeposit ?? input.monthlyAmount, 0)) }], assumptions: [`${rate}% annual rate`, `${years} year term`] };
+  }
+  if (kind === 'calculateSWP') {
+    const corpus = n(input.corpusAmount, 0); const monthly = n(input.monthlyWithdrawal, 0); const months = Math.max(1, Math.round(years * 12)); const mr = rate / 1200;
+    const remaining = corpus * Math.pow(1 + mr, months) - monthly * ((Math.pow(1 + mr, months) - 1) / (mr || 1));
+    return { summary: [{ label: 'Estimated remaining corpus', value: money(Math.max(0, remaining)) }, { label: 'Total withdrawals', value: money(monthly * months) }], assumptions: [`${rate}% annual return`, `${years} year withdrawal period`] };
+  }
+  return { summary: [{ label: 'Calculation', value: 'Supported through the selected calculator' }], assumptions: [] };
+}
+
+const CALCULATOR_TOOLS = ['calculateSIP', 'calculateStepUpSIP', 'calculateSWP', 'calculateLumpsum', 'calculateGoal', 'calculateRetirement', 'calculateEMI', 'calculateFD', 'calculateRD', 'calculatePPF', 'calculateGST', 'calculateTax'];
+const AI_TOOLS = [
+  ...CALCULATOR_TOOLS.map((name) => ({ type: 'function', name, description: `Run the deterministic ${name} calculator. Never estimate financial arithmetic yourself.`, parameters: { type: 'object', properties: { inputs: { type: 'object', additionalProperties: { type: ['number', 'string', 'boolean'] } } }, required: ['inputs'], additionalProperties: false } })),
+  { type: 'function', name: 'getPortfolio', description: 'Load a compact summary of the user portfolio by id.', parameters: { type: 'object', properties: { portfolioId: { type: 'string' } }, required: ['portfolioId'], additionalProperties: false } },
+  { type: 'function', name: 'getSavedPlans', description: 'List the user saved calculator configurations by calculator page.', parameters: { type: 'object', properties: { page: { type: 'string' } }, additionalProperties: false } },
+  { type: 'function', name: 'getGoals', description: 'List the user saved financial goals.', parameters: { type: 'object', properties: {}, additionalProperties: false } },
+  { type: 'function', name: 'createDraft', description: 'Prepare, but never save, a configuration, portfolio, or goal. The user must confirm separately.', parameters: { type: 'object', properties: { kind: { type: 'string', enum: ['configuration', 'portfolio', 'goal'] }, title: { type: 'string' }, payload: { type: 'object' } }, required: ['kind', 'title', 'payload'], additionalProperties: false } },
+];
+
+const NVIDIA_AI_TOOLS = AI_TOOLS.map((tool) => ({
+  type: 'function',
+  function: {
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.parameters,
+  },
+}));
+
+function contextDigest(user, context) {
+  const settings = normalizeSettings(user.settings);
+  const configs = Object.entries(user.configs || {}).flatMap(([page, entries]) => (entries || []).slice(0, 5).map((entry) => ({ id: entry.id, page, name: entry.name, config: entry.config, updatedAt: entry.updatedAt })));
+  return { attached: context || {}, profile: { defaultInflationRate: settings.defaultInflationRate }, portfolios: settings.portfolios.map(({ id, name, updatedAt, items }) => ({ id, name, updatedAt, itemCount: items.length, items: items.slice(0, 8) })), configs: configs.slice(0, 20) };
+}
+
+function executeAITool(user, name, args) {
+  if (CALCULATOR_TOOLS.includes(name)) return compactResult(calculatorResult(name, args.inputs));
+  const settings = normalizeSettings(user.settings);
+  if (name === 'getPortfolio') {
+    const portfolio = settings.portfolios.find((item) => item.id === args.portfolioId);
+    if (!portfolio) throw new Error('Portfolio not found.');
+    return { id: portfolio.id, name: portfolio.name, itemCount: portfolio.items.length, timelineYear: portfolio.timelineYear, inflationAdjusted: portfolio.inflationAdjusted, inflationRate: portfolio.inflationRate, items: portfolio.items.slice(0, 20) };
+  }
+  if (name === 'getSavedPlans') return Object.entries(user.configs || {}).flatMap(([page, entries]) => page === args.page || !args.page ? (entries || []).map(({ id, name, config, updatedAt }) => ({ id, page, name, config, updatedAt })) : []).slice(0, 20);
+  if (name === 'getGoals') return getAIState(user).goals.slice(0, 20);
+  if (name === 'createDraft') {
+    const state = getAIState(user); const draft = { id: crypto.randomUUID(), kind: args.kind, title: String(args.title).slice(0, 100), payload: args.payload || {}, createdAt: new Date().toISOString() };
+    state.drafts.unshift(draft); return { draftId: draft.id, kind: draft.kind, title: draft.title, requiresConfirmation: true };
+  }
+  throw new Error('Tool is not registered.');
+}
+
+const AI_SYSTEM_INSTRUCTIONS = `You are PlanMyCapital AI, an educational financial planning assistant. Never do calculator, tax, loan, return, withdrawal, or portfolio arithmetic yourself: call a deterministic app tool. Use user data only through tools. Explain assumptions and scenarios; do not provide individualized buy/sell instructions. Create drafts only with createDraft and state that user confirmation is required. Keep responses concise.`;
+
 // API routes above, catch-all for React routing below
 
 app.post('/api/auth/signup', async (req, res) => {
@@ -388,6 +532,7 @@ app.post('/api/auth/signup', async (req, res) => {
       history: [],
       configs: {},
       settings: defaultUserSettings(),
+      ai: defaultAIState(),
       createdAt: new Date().toISOString()
     };
     const token = createSession(newUser);
@@ -519,6 +664,196 @@ app.get('/api/history', requireAuth, (req, res) => {
   res.json({ history: req.auth.user.history || [] });
 });
 
+function findAIChat(user, chatId) {
+  const chat = getAIState(user).chats.find((item) => item.id === chatId);
+  if (!chat) throw new Error('Chat not found.');
+  return chat;
+}
+
+function publicChat(chat, includeMessages = false) {
+  const base = { id: chat.id, title: chat.title, type: chat.type, pinned: chat.pinned, createdAt: chat.createdAt, updatedAt: chat.updatedAt, summary: chat.summary, context: chat.context };
+  return includeMessages ? { ...base, messages: chat.messages } : base;
+}
+
+function refreshChatSummary(chat) {
+  const recent = chat.messages.slice(-6).map((message) => `${message.role}: ${message.text}`).join(' | ');
+  chat.summary = recent.slice(-1600);
+}
+
+app.get('/api/ai/chats', requireAuth, asyncHandler(async (req, res) => {
+  const query = String(req.query.q || '').trim().toLowerCase();
+  const chats = getAIState(req.auth.user).chats
+    .filter((chat) => !query || `${chat.title} ${chat.summary}`.toLowerCase().includes(query))
+    .sort((a, b) => Number(b.pinned) - Number(a.pinned) || new Date(b.updatedAt) - new Date(a.updatedAt))
+    .map((chat) => publicChat(chat));
+  res.json({ chats });
+}));
+
+app.post('/api/ai/chats', requireAuth, asyncHandler(async (req, res) => {
+  const state = getAIState(req.auth.user);
+  const chat = { id: crypto.randomUUID(), title: String(req.body.title || 'New chat').slice(0, 100), type: String(req.body.type || 'general'), pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), summary: '', messages: [], context: req.body.context && typeof req.body.context === 'object' ? req.body.context : {} };
+  state.chats.unshift(chat);
+  await updateUser(req.auth.user.username, { ai: state });
+  res.status(201).json({ chat: publicChat(chat, true) });
+}));
+
+app.get('/api/ai/chats/:chatId', requireAuth, asyncHandler(async (req, res) => {
+  res.json({ chat: publicChat(findAIChat(req.auth.user, req.params.chatId), true) });
+}));
+
+app.put('/api/ai/chats/:chatId', requireAuth, asyncHandler(async (req, res) => {
+  const chat = findAIChat(req.auth.user, req.params.chatId);
+  if (req.body.title !== undefined) chat.title = String(req.body.title || 'New chat').trim().slice(0, 100) || 'New chat';
+  if (req.body.pinned !== undefined) chat.pinned = Boolean(req.body.pinned);
+  chat.updatedAt = new Date().toISOString();
+  await updateUser(req.auth.user.username, { ai: getAIState(req.auth.user) });
+  res.json({ chat: publicChat(chat) });
+}));
+
+app.delete('/api/ai/chats/:chatId', requireAuth, asyncHandler(async (req, res) => {
+  const state = getAIState(req.auth.user);
+  const initialLength = state.chats.length;
+  state.chats = state.chats.filter((chat) => chat.id !== req.params.chatId);
+  if (state.chats.length === initialLength) return res.status(404).json({ message: 'Chat not found.' });
+  state.drafts = state.drafts.filter((draft) => draft.chatId !== req.params.chatId);
+  await updateUser(req.auth.user.username, { ai: state });
+  res.json({ ok: true });
+}));
+
+app.post('/api/ai/chats/:chatId/messages', requireAuth, asyncHandler(async (req, res) => {
+  const user = req.auth.user;
+  const state = getAIState(user);
+  const chat = findAIChat(user, req.params.chatId);
+  const action = String(req.body.action || 'send');
+
+  if (action === 'discard_draft') {
+    state.drafts = state.drafts.filter((draft) => draft.id !== req.body.draftId);
+    await updateUser(user.username, { ai: state });
+    return res.json({ ok: true, chat: publicChat(chat, true) });
+  }
+
+  if (action === 'confirm_save') {
+    const draft = state.drafts.find((item) => item.id === req.body.draftId && item.chatId === chat.id);
+    if (!draft) return res.status(404).json({ message: 'Draft not found.' });
+    if (draft.kind === 'configuration') {
+      const page = String(draft.payload.page || 'sip');
+      user.configs = user.configs || {}; user.configs[page] = user.configs[page] || [];
+      user.configs[page].unshift({ id: crypto.randomUUID(), name: draft.title, config: draft.payload.config || draft.payload, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    } else if (draft.kind === 'portfolio') {
+      user.settings = normalizeSettings(user.settings); user.settings.portfolios.unshift({ id: crypto.randomUUID(), name: draft.title, items: Array.isArray(draft.payload.items) ? draft.payload.items : [], inflationAdjusted: false, inflationRate: user.settings.defaultInflationRate, timelineYear: getPortfolioBaseYear(), updatedAt: new Date().toISOString() });
+    } else if (draft.kind === 'goal') {
+      state.goals.unshift({ id: crypto.randomUUID(), title: draft.title, ...draft.payload, createdAt: new Date().toISOString() });
+    }
+    state.drafts = state.drafts.filter((item) => item.id !== draft.id);
+    chat.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: `${draft.title} has been saved.`, createdAt: new Date().toISOString(), actions: [], cards: [] });
+    refreshChatSummary(chat); chat.updatedAt = new Date().toISOString();
+    await updateUser(user.username, { ai: state, configs: user.configs, settings: user.settings });
+    return res.json({ chat: publicChat(chat, true), saved: { kind: draft.kind, title: draft.title } });
+  }
+
+  const message = String(req.body.message || '').trim();
+  if (!message) return res.status(400).json({ message: 'Message is required.' });
+  const nvidia = getNvidiaClient();
+  const now = new Date().toISOString();
+  chat.context = { ...chat.context, ...(req.body.context && typeof req.body.context === 'object' ? req.body.context : {}) };
+  chat.messages.push({ id: crypto.randomUUID(), role: 'user', text: message.slice(0, 8000), createdAt: now, actions: [], cards: [] });
+  if (!nvidia) {
+    const providerMessage = 'PlanMyCapital AI is not configured on the server.';
+    chat.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: providerMessage, createdAt: new Date().toISOString(), actions: [], cards: [] });
+    refreshChatSummary(chat); chat.updatedAt = new Date().toISOString();
+    await updateUser(user.username, { ai: state });
+    return res.status(503).json({ message: providerMessage, chat: publicChat(chat, true) });
+  }
+  const transcript = chat.messages.slice(-8).map((item) => ({ role: item.role, content: item.text }));
+  let input = [
+    { role: 'system', content: AI_SYSTEM_INSTRUCTIONS },
+    { role: 'system', content: `Compact user context: ${JSON.stringify(contextDigest(user, chat.context))}` },
+    { role: 'system', content: `Conversation memory: ${chat.summary || 'No prior summary.'}` },
+    ...transcript,
+  ];
+  const cards = [];
+  let response;
+  try {
+    for (let round = 0; round < AI_MAX_TOOL_ROUNDS; round += 1) {
+      response = await nvidia.chat.completions.create({
+        model: AI_MODEL,
+        messages: input,
+        tools: NVIDIA_AI_TOOLS,
+        tool_choice: 'auto',
+        temperature: 0.2,
+        max_tokens: 768,
+        reasoning_effort: 'none',
+      });
+      const assistantMessage = response.choices?.[0]?.message;
+      const calls = assistantMessage?.tool_calls || [];
+      if (calls.length === 0) break;
+      input = [...input, assistantMessage];
+      const outputs = calls.map((call) => {
+        try {
+          const name = call.function?.name;
+          const result = executeAITool(user, name, JSON.parse(call.function?.arguments || '{}'));
+          if (name === 'createDraft') {
+            const draft = state.drafts[0]; if (draft) { draft.chatId = chat.id; cards.push({ type: 'draft', draftId: draft.id, kind: draft.kind, title: draft.title }); }
+          } else if (CALCULATOR_TOOLS.includes(name)) cards.push({ type: 'calculator', title: name, result });
+          return { role: 'tool', tool_call_id: call.id, content: JSON.stringify(result) };
+        } catch (error) { return { role: 'tool', tool_call_id: call.id, content: JSON.stringify({ error: error.message || 'Tool could not run.' }) }; }
+      });
+      input = [...input, ...outputs];
+    }
+  } catch (error) {
+    const providerMessage = friendlyAIError(error);
+    chat.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: providerMessage, createdAt: new Date().toISOString(), actions: [], cards: [] });
+    refreshChatSummary(chat); chat.updatedAt = new Date().toISOString();
+    await updateUser(user.username, { ai: state });
+    return res.status(Number(error?.status) === 429 ? 429 : 502).json({ message: providerMessage, chat: publicChat(chat, true) });
+  }
+  const answer = String(response?.choices?.[0]?.message?.content || 'I could not complete that request. Please try again.').trim();
+  const usage = response?.usage || {};
+  state.tokenUsage.input += Number(usage.input_tokens || 0); state.tokenUsage.output += Number(usage.output_tokens || 0); state.tokenUsage.cached += Number(usage.input_tokens_details?.cached_tokens || 0);
+  chat.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: answer, createdAt: new Date().toISOString(), actions: cards.some((card) => card.type === 'draft') ? [{ label: 'Save draft', action: 'confirm_save' }] : [], cards });
+  if (chat.title === 'New chat') chat.title = message.slice(0, 58);
+  refreshChatSummary(chat); chat.updatedAt = new Date().toISOString();
+  await updateUser(user.username, { ai: state });
+  res.json({ chat: publicChat(chat, true), usage: { input: usage.input_tokens || 0, output: usage.output_tokens || 0, cached: usage.input_tokens_details?.cached_tokens || 0 } });
+}));
+
+app.get('/api/ai/test', asyncHandler(async (req, res) => {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
+    }
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: 'Reply with exactly: PlanMyCapital AI is working.',
+    });
+    res.json({ success: true, response: response.text });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}));
+
+app.get('/api/ai/nvidia-test', asyncHandler(async (req, res) => {
+  try {
+    const apiKey = process.env.NVIDIA_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'NVIDIA_API_KEY is not configured on the server.' });
+    }
+    const nvidia = new OpenAI({ apiKey, baseURL: 'https://integrate.api.nvidia.com/v1' });
+    const completion = await nvidia.chat.completions.create({
+      model: 'nvidia/nvidia-nemotron-nano-9b-v2',
+      messages: [{ role: 'user', content: 'Reply with exactly: PlanMyCapital NVIDIA AI is working.' }],
+      temperature: 0,
+      max_tokens: 512,
+      reasoning_effort: 'none',
+    });
+    const reply = (completion.choices?.[0]?.message?.content ?? '').trim();
+    res.json({ success: true, response: reply });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}));
 app.post('/api/history', requireAuth, asyncHandler(async (req, res) => {
   const item = req.body || {};
   const calcType = String(item.calcType || '').trim();

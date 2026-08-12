@@ -3,6 +3,7 @@ import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-do
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { AIProvider } from './context/ai/AIContext';
 import Header from './components/Header';
 import MobileFixedHeader from './components/MobileFixedHeader';
 import './styles/mobile-header.css';
@@ -11,6 +12,7 @@ import Home from './pages/Home';
 import RouteMeta from './components/RouteMeta';
 import './styles/main.css';
 import './styles/calculator.css';
+import './styles/ai.css';
 import { attachMobileRangeBehavior, isMobileRangeContext } from './utils/mobileRangeSlider';
 
 const clarityProjectId = process.env.REACT_APP_CLARITY_PROJECT_ID;
@@ -34,6 +36,7 @@ const CustomInflationCalculator = lazy(() => import('./pages/CustomInflationCalc
 const PortfolioDetailsPage = lazy(() => import('./pages/PortfolioDetailsPage'));
 const PortfolioLibraryPage = lazy(() => import('./pages/PortfolioLibraryPage'));
 const CategoryPage = lazy(() => import('./pages/CategoryPage'));
+const AIHomePage = lazy(() => import('./pages/ai/AIHomePage'));
 const SpeedInsights = lazy(() => import('@vercel/speed-insights/react').then(({ SpeedInsights: Component }) => ({ default: Component })));
 const Analytics = lazy(() => import('@vercel/analytics/react').then(({ Analytics: Component }) => ({ default: Component })));
 
@@ -141,6 +144,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <SettingsProvider>
+          <AIProvider>
           <BrowserRouter>
             <RangeSliderSync />
             <RouteMeta />
@@ -152,6 +156,7 @@ function App() {
                 <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/portfolio" element={<PortfolioLibraryPage />} />
+              <Route path="/ai" element={<AIHomePage />} />
               <Route path="/invest" element={<CategoryPage category="invest" />} />
               <Route path="/plan" element={<CategoryPage category="plan" />} />
               <Route path="/loans" element={<CategoryPage category="loans" />} />
@@ -196,6 +201,7 @@ function App() {
               </Suspense>
             )}
           </BrowserRouter>
+          </AIProvider>
         </SettingsProvider>
       </AuthProvider>
     </ThemeProvider>

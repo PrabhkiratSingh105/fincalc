@@ -13,7 +13,10 @@ export async function parseApiResponse(response, fallbackMessage) {
   const data = await parseResponseBody(response);
 
   if (!response.ok) {
-    throw new Error(data?.message || fallbackMessage);
+    const error = new Error(data?.message || data?.error || data?.detail || data?.raw || fallbackMessage);
+    error.status = response.status;
+    error.data = data;
+    throw error;
   }
 
   return data;

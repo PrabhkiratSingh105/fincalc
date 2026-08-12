@@ -38,6 +38,15 @@ export default function ProfilePage() {
             Open custom inflation calculator
           </Link>
         </section>
+
+        <section className="card settings-card profile-portfolio-link">
+          <div className="slbl">Portfolio</div>
+          <p className="settings-note">Review saved portfolios, allocation details, and performance from your personal workspace.</p>
+          <Link to="/portfolio" className="mini-btn settings-link-btn">
+            <span className="material-symbols-rounded">pie_chart</span>
+            Open portfolio
+          </Link>
+        </section>
       </div>
     </div>
   );

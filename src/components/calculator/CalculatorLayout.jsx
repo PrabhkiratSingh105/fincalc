@@ -3,6 +3,7 @@ import SavedConfigsPanel from '../SavedConfigsPanel';
 import { useCalculatorPage } from '../../hooks/useCalculatorPage';
 import { formatIndianNumberInput, toNumber } from '../../utils/format';
 import { useSettings } from '../../context/SettingsContext';
+import DiscussWithAIButton from '../ai/DiscussWithAIButton';
 
 const ChartPanel = lazy(() => import('./ChartPanel'));
 
@@ -460,6 +461,7 @@ export default function CalculatorLayout({
       <div className="ph">
         <h1>{title}</h1>
         <p>{description}</p>
+        <DiscussWithAIButton calculator={{ id, title, description }} results={results} />
         {!isMobile && renderSavedConfigs()}
       </div>
 

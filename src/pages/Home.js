@@ -82,7 +82,6 @@ function ToolLink({ item, featured = false }) {
 }
 
 export default function Home() {
-  const isMobile = window.matchMedia("(max-width: 768px)").matches;
   return (
     <main className="page home-page" aria-label="Home">
       <section className="home-shell">
@@ -118,47 +117,37 @@ export default function Home() {
           <p>Choose a calculator, set your assumptions, and get a decision-ready view in moments.</p>
         </div>
 
-        {isMobile ? (
-          <div className="home-feature-grid" aria-label="Investment options">
-            {investmentTools.map((item) => (
-              <ToolLink key={item.path} item={item} featured />
-            ))}
-          </div>
-        ) : (
-          <>
-            <div className="home-feature-grid" aria-label="Investment options">
-              {investmentTools.map((item) => (
-                <ToolLink key={item.path} item={item} featured />
+        <div className="home-feature-grid" aria-label="Investment options">
+          {investmentTools.map((item) => (
+            <ToolLink key={item.path} item={item} featured />
+          ))}
+        </div>
+
+        <div className="home-section-grid">
+          <section className="home-tool-section" aria-labelledby="planning-tools-heading">
+            <div className="home-section-head">
+              <h2 id="planning-tools-heading">Plan</h2>
+              <span>Goals, withdrawals, and purchasing power</span>
+            </div>
+            <div className="home-compact-grid">
+              {planningTools.map((item) => (
+                <ToolLink key={item.path} item={item} />
               ))}
             </div>
-            
-            <div className="home-section-grid">
-              <section className="home-tool-section" aria-labelledby="planning-tools-heading">
-                <div className="home-section-head">
-                  <h2 id="planning-tools-heading">Plan</h2>
-                  <span>Goals, withdrawals, and purchasing power</span>
-                </div>
-                <div className="home-compact-grid">
-                  {planningTools.map((item) => (
-                    <ToolLink key={item.path} item={item} />
-          ))}
-        </div>
-      </section>
+          </section>
 
-      <section className="home-tool-section" aria-labelledby="money-tools-heading">
-        <div className="home-section-head">
-          <h2 id="money-tools-heading">Loans & tax</h2>
-          <span>EMIs, prepayments, eligibility, and tax</span>
+          <section className="home-tool-section" aria-labelledby="money-tools-heading">
+            <div className="home-section-head">
+              <h2 id="money-tools-heading">Loans & tax</h2>
+              <span>EMIs, prepayments, eligibility, and tax</span>
+            </div>
+            <div className="home-compact-grid">
+              {moneyTools.map((item) => (
+                <ToolLink key={item.path} item={item} />
+              ))}
+            </div>
+          </section>
         </div>
-        <div className="home-compact-grid">
-          {moneyTools.map((item) => (
-            <ToolLink key={item.path} item={item} />
-          ))}
-        </div>
-      </section>
-    </div>
-  </>
-)}
       </section>
     </main>
   );

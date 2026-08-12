@@ -102,6 +102,9 @@ export default function Header({ setShowAuthModal }) {
         </Link>
 
         <nav className={`desktop-main-nav ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          <NavLink to="/ai" className="nav-item ai-nav-link" onClick={() => setOpenDropdown(null)}>
+            <span className="material-symbols-rounded">auto_awesome</span> AI
+          </NavLink>
           {NAV.map((group) => (
             <div
               key={group.id}
@@ -205,11 +208,16 @@ export default function Header({ setShowAuthModal }) {
         {[
           { to: '/', label: 'Home', icon: 'home', end: true },
           { to: '/invest', label: 'Invest', icon: 'trending_up' },
+          { to: '/ai', label: 'AI', icon: 'auto_awesome' },
           { to: '/plan', label: 'Plan', icon: 'track_changes' },
           { to: '/loans', label: 'Loans', icon: 'credit_card' },
-          { to: '/portfolio', label: 'Portfolio', icon: 'pie_chart' },
         ].map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.end} className="mobile-bottom-link">
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) => `mobile-bottom-link${isActive ? ' active' : ''}`}
+          >
             <span className="material-symbols-rounded">{item.icon}</span>
             <span>{item.label}</span>
           </NavLink>
