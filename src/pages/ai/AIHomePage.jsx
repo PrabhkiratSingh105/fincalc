@@ -52,7 +52,6 @@ function addOrUpdateChat(chats, nextChat) {
       || new Date(right.updatedAt) - new Date(left.updatedAt)
   );
 }
-
 function createPendingMessage(text) {
   return {
     id: `pending-${Date.now()}`,
@@ -63,7 +62,6 @@ function createPendingMessage(text) {
     cards: [],
   };
 }
-
 function IconButton({ label, icon, onClick, className = '' }) {
   return <button type="button" className={`ai-icon-button ${className}`} onClick={onClick} aria-label={label}><span className="material-symbols-rounded">{icon}</span></button>;
 }

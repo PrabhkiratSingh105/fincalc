@@ -764,7 +764,7 @@ app.post('/api/ai/chats/:chatId/messages', requireAuth, asyncHandler(async (req,
     await updateUser(user.username, { ai: state });
     return res.status(503).json({ message: providerMessage, chat: publicChat(chat, true) });
   }
-  const transcript = chat.messages.slice(-8).map((item) => ({ role: item.role, content: item.text }));
+  const transcript = chat.messages.slice(-20).map((item) => ({ role: item.role, content: item.text }));
   let input = [
     { role: 'system', content: AI_SYSTEM_INSTRUCTIONS },
     { role: 'system', content: `Compact user context: ${JSON.stringify(contextDigest(user, chat.context))}` },
