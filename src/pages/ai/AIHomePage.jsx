@@ -12,7 +12,6 @@ import {
   SystemMessage,
   TypingIndicator,
 } from '../../components/ai/AIResponseComponents';
-import { CONVERSATION_TYPES } from '../../types/ai';
 
 const QUICK_ACTIONS = [
   { id: 'sip', icon: 'calculate', title: 'Run a calculation', description: 'SIP, loan, FD, tax, or retirement maths.', type: 'calculator' },
