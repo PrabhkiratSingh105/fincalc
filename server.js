@@ -183,6 +183,25 @@ function verifyPassword(password, user) {
   }
 }
 
+function mergeAIState(existing, updates) {
+  if (!updates) return existing;
+  const next = { ...existing };
+  if (updates.chats !== undefined) next.chats = updates.chats;
+  if (updates.goals !== undefined) next.goals = updates.goals;
+  if (updates.drafts !== undefined) next.drafts = updates.drafts;
+  if (updates.tokenUsage !== undefined) next.tokenUsage = updates.tokenUsage;
+  if (updates.conversation !== undefined) next.conversation = updates.conversation;
+  return next;
+}
+
+function updateAIState(username, updates) {
+  const merged = mergeAIState(
+    { chats: [], goals: [], drafts: [], tokenUsage: { input: 0, cached: 0, output: 0 } },
+    updates
+  );
+  await supabase.from('users').update({ ai: merged }).eq('username', username);
+}
+
 function asyncHandler(handler) {
   return (req, res, next) => {
     Promise.resolve(handler(req, res, next)).catch(next);
@@ -693,7 +712,8 @@ app.post('/api/ai/chats', requireAuth, asyncHandler(async (req, res) => {
   const state = getAIState(req.auth.user);
   const chat = { id: crypto.randomUUID(), title: String(req.body.title || 'New chat').slice(0, 100), type: String(req.body.type || 'general'), pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), summary: '', messages: [], context: req.body.context && typeof req.body.context === 'object' ? req.body.context : {} };
   state.chats.unshift(chat);
-  await updateUser(req.auth.user.username, { ai: state });
+  const existingAI = req.auth.user.ai || { chats: [], goals: [], drafts: [], tokenUsage: { input: 0, cached: 0, output: 0 } };
+  await updateAIState(req.auth.user.username, { ai: mergeAIState(existingAI, state) });
   res.status(201).json({ chat: publicChat(chat, true) });
 }));
 
@@ -706,7 +726,8 @@ app.put('/api/ai/chats/:chatId', requireAuth, asyncHandler(async (req, res) => {
   if (req.body.title !== undefined) chat.title = String(req.body.title || 'New chat').trim().slice(0, 100) || 'New chat';
   if (req.body.pinned !== undefined) chat.pinned = Boolean(req.body.pinned);
   chat.updatedAt = new Date().toISOString();
-  await updateUser(req.auth.user.username, { ai: getAIState(req.auth.user) });
+  const existingAI = req.auth.user.ai || { chats: [], goals: [], drafts: [], tokenUsage: { input: 0, cached: 0, output: 0 } };
+  await updateAIState(req.auth.user.username, { ai: mergeAIState(existingAI, getAIState(req.auth.user)) });
   res.json({ chat: publicChat(chat) });
 }));
 
@@ -716,7 +737,8 @@ app.delete('/api/ai/chats/:chatId', requireAuth, asyncHandler(async (req, res) =
   state.chats = state.chats.filter((chat) => chat.id !== req.params.chatId);
   if (state.chats.length === initialLength) return res.status(404).json({ message: 'Chat not found.' });
   state.drafts = state.drafts.filter((draft) => draft.chatId !== req.params.chatId);
-  await updateUser(req.auth.user.username, { ai: state });
+  const existingAI = req.auth.user.ai || { chats: [], goals: [], drafts: [], tokenUsage: { input: 0, cached: 0, output: 0 } };
+  await updateAIState(req.auth.user.username, { ai: mergeAIState(existingAI, state) });
   res.json({ ok: true });
 }));
 
@@ -728,7 +750,8 @@ app.post('/api/ai/chats/:chatId/messages', requireAuth, asyncHandler(async (req,
 
   if (action === 'discard_draft') {
     state.drafts = state.drafts.filter((draft) => draft.id !== req.body.draftId);
-    await updateUser(user.username, { ai: state });
+    const existingAI = user.ai || { chats: [], goals: [], drafts: [], tokenUsage: { input: 0, cached: 0, output: 0 } };
+    await updateAIState(user.username, { ai: mergeAIState(existingAI, state) });
     return res.json({ ok: true, chat: publicChat(chat, true) });
   }
 
@@ -747,7 +770,8 @@ app.post('/api/ai/chats/:chatId/messages', requireAuth, asyncHandler(async (req,
     state.drafts = state.drafts.filter((item) => item.id !== draft.id);
     chat.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: `${draft.title} has been saved.`, createdAt: new Date().toISOString(), actions: [], cards: [] });
     refreshChatSummary(chat); chat.updatedAt = new Date().toISOString();
-    await updateUser(user.username, { ai: state, configs: user.configs, settings: user.settings });
+    const existingAI = user.ai || { chats: [], goals: [], drafts: [], tokenUsage: { input: 0, cached: 0, output: 0 } };
+    await updateAIState(user.username, { ai: mergeAIState(existingAI, state), configs: user.configs, settings: user.settings });
     return res.json({ chat: publicChat(chat, true), saved: { kind: draft.kind, title: draft.title } });
   }
 
@@ -761,7 +785,8 @@ app.post('/api/ai/chats/:chatId/messages', requireAuth, asyncHandler(async (req,
     const providerMessage = 'PlanMyCapital AI is not configured on the server.';
     chat.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: providerMessage, createdAt: new Date().toISOString(), actions: [], cards: [] });
     refreshChatSummary(chat); chat.updatedAt = new Date().toISOString();
-    await updateUser(user.username, { ai: state });
+    const existingAI = user.ai || { chats: [], goals: [], drafts: [], tokenUsage: { input: 0, cached: 0, output: 0 } };
+    await updateAIState(user.username, { ai: mergeAIState(existingAI, state) });
     return res.status(503).json({ message: providerMessage, chat: publicChat(chat, true) });
   }
   const transcript = chat.messages.slice(-20).map((item) => ({ role: item.role, content: item.text }));
@@ -804,7 +829,8 @@ app.post('/api/ai/chats/:chatId/messages', requireAuth, asyncHandler(async (req,
     const providerMessage = friendlyAIError(error);
     chat.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: providerMessage, createdAt: new Date().toISOString(), actions: [], cards: [] });
     refreshChatSummary(chat); chat.updatedAt = new Date().toISOString();
-    await updateUser(user.username, { ai: state });
+    const existingAI = user.ai || { chats: [], goals: [], drafts: [], tokenUsage: { input: 0, cached: 0, output: 0 } };
+    await updateAIState(user.username, { ai: mergeAIState(existingAI, state) });
     return res.status(Number(error?.status) === 429 ? 429 : 502).json({ message: providerMessage, chat: publicChat(chat, true) });
   }
   const answer = String(response?.choices?.[0]?.message?.content || 'I could not complete that request. Please try again.').trim();

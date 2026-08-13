@@ -19,7 +19,7 @@ export function AIProvider({ children }) {
     context,
     setContext,
     prepareContext: (nextContext) => setContext((current) => ({ ...current, ...nextContext })),
-    clearContext: () => setContext(emptyContext),
+    clearContext: () => setContext({ ...emptyContext, conversation: context.conversation }),
   }), [context]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;

@@ -137,6 +137,7 @@ export default function AIHomePage() {
   useEffect(() => { refreshChats(); }, [refreshChats]);
   useEffect(() => { const timer = window.setTimeout(() => refreshChats(query), 250); return () => window.clearTimeout(timer); }, [query, refreshChats]);
   useEffect(() => { messageEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [chat?.messages, loading]);
+  useEffect(() => { if (chat?.id) refreshChats(); }, [chat?.id, refreshChats]);
 
   const updateChat = useCallback(async (item, payload) => {
     try {
@@ -205,7 +206,7 @@ export default function AIHomePage() {
 
   const deleteChat = async (id) => {
     if (!window.confirm('Delete this conversation?')) return;
-    try { await aiClient.deleteChat(token, id); if (chat?.id === id) { setChat(null); clearContext(); } await refreshChats(query); } catch (requestError) { setError(requestError.message); }
+    try { await aiClient.deleteChat(token, id); if (chat?.id === id) { setChat(null); } await refreshChats(query); } catch (requestError) { setError(requestError.message); }
   };
   const renameChat = (item) => { const title = window.prompt('Conversation name', item.title); if (title?.trim()) updateChat(item, { title: title.trim() }); };
   const newConversation = () => { setChat(null); setError(''); setMessage(''); setDrawerOpen(false); inputRef.current?.focus(); };
