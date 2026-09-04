@@ -14,7 +14,7 @@ export default function ProfilePage() {
 
       <div className="settings-grid">
         <section className="card settings-card">
-          <div className="slbl">Global Defaults</div>
+          <div className="slbl">Planning defaults</div>
           <label className="settings-label" htmlFor="defaultInflationRate">
             Default Inflation Rate (%)
           </label>
@@ -32,7 +32,7 @@ export default function ProfilePage() {
         </section>
 
         <section className="card settings-card">
-          <div className="slbl">Custom Inflation</div>
+          <div className="slbl">Personal inflation</div>
           <p className="settings-note">Build a weighted inflation blend by expense category and promote it to the global default when you are ready.</p>
           <Link to="/custom-inflation" className="mini-btn primary settings-link-btn">
             Open custom inflation calculator

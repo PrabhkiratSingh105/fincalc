@@ -402,9 +402,9 @@ export default function PortfolioDetailsPage() {
 
         <aside className="portfolio-summary-panel">
           <div className="card portfolio-summary-card">
-            <div className="slbl">Summary Panel</div>
+            <div className="slbl">Plan snapshot</div>
             <div className="portfolio-worth-value">{formatINR(Math.round(snapshot.totalNetWorth))}</div>
-            <div className="portfolio-worth-label">Total Net Worth</div>
+            <h2 className="portfolio-worth-label">Total net worth</h2>
 
             <div className="portfolio-stats-grid">
               <div className="portfolio-stat">
@@ -434,7 +434,7 @@ export default function PortfolioDetailsPage() {
             </div>
 
             <label className="portfolio-slider-block" htmlFor="portfolioTimeline">
-              <span className="slbl">Timeline Year</span>
+              <span className="slbl">Planning horizon</span>
               <div className="portfolio-slider-label">{selectedCalendarYear}</div>
               <input
                 id="portfolioTimeline"

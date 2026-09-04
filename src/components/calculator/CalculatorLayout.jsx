@@ -333,7 +333,10 @@ export default function CalculatorLayout({
       <>
         {summary && <div className="card calc-summary-card">
           <div className="calc-summary-head-row">
-            <div className="slbl">Results Summary</div>
+            <div>
+              <div className="slbl">Your plan</div>
+              <h2 className="calc-results-title">Results at a glance</h2>
+            </div>
             {hasInflationField && (
               <div className="portfolio-toggle-group calc-result-toggle-group">
                 <button
@@ -472,7 +475,7 @@ export default function CalculatorLayout({
             <>
               {renderSavedConfigs({ showSave: false })}
               <button type="button" className="mini-btn primary calc-find-button" onClick={() => setMobileScreen('output')}>
-                Find
+                Calculate
                 <span className="material-symbols-rounded">arrow_forward</span>
               </button>
             </>

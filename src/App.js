@@ -14,6 +14,7 @@ import RouteMeta from './components/RouteMeta';
 import './styles/main.css';
 import './styles/calculator.css';
 import './styles/ai.css';
+import './styles/editorial.css';
 import { attachMobileRangeBehavior, isMobileRangeContext } from './utils/mobileRangeSlider';
 
 const clarityProjectId = process.env.REACT_APP_CLARITY_PROJECT_ID;
