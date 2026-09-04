@@ -1,8 +1,12 @@
 import React from 'react';
 import { usePrepareAIChat } from '../../hooks/ai/usePrepareAIChat';
+import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 
 export default function DiscussWithAIButton({ calculator, results, className = '' }) {
   const prepareChat = usePrepareAIChat();
+  const { aiFeatures } = useFeatureFlags();
+  if (!aiFeatures) return null;
+
   return (
     <button
       type="button"

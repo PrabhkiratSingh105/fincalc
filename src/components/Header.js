@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useFeatureFlags } from '../context/FeatureFlagsContext';
 
 const NAV = [
   {
@@ -42,6 +43,7 @@ const NAV = [
 export default function Header({ setShowAuthModal }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { aiFeatures } = useFeatureFlags();
   const [openDropdown, setOpenDropdown] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -102,9 +104,11 @@ export default function Header({ setShowAuthModal }) {
         </Link>
 
         <nav className={`desktop-main-nav ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-          <NavLink to="/ai" className="nav-item ai-nav-link" onClick={() => setOpenDropdown(null)}>
-            <span className="material-symbols-rounded">auto_awesome</span> AI
-          </NavLink>
+          {aiFeatures && (
+            <NavLink to="/ai" className="nav-item ai-nav-link" onClick={() => setOpenDropdown(null)}>
+              <span className="material-symbols-rounded">auto_awesome</span> AI
+            </NavLink>
+          )}
           {NAV.map((group) => (
             <div
               key={group.id}
@@ -208,7 +212,7 @@ export default function Header({ setShowAuthModal }) {
         {[
           { to: '/', label: 'Home', icon: 'home', end: true },
           { to: '/invest', label: 'Invest', icon: 'trending_up' },
-          { to: '/ai', label: 'AI', icon: 'auto_awesome' },
+          // { to: '/ai', label: 'AI', icon: 'auto_awesome' },
           { to: '/plan', label: 'Plan', icon: 'track_changes' },
           { to: '/loans', label: 'Loans', icon: 'credit_card' },
         ].map((item) => (

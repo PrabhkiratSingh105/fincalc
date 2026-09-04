@@ -1,9 +1,10 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AIProvider } from './context/ai/AIContext';
+import { FeatureFlagsProvider, useFeatureFlags } from './context/FeatureFlagsContext';
 import Header from './components/Header';
 import MobileFixedHeader from './components/MobileFixedHeader';
 import './styles/mobile-header.css';
@@ -122,6 +123,11 @@ function RangeSliderSync() {
   return null;
 }
 
+function AIEnabledRoute() {
+  const { aiFeatures } = useFeatureFlags();
+  return aiFeatures ? <AIHomePage /> : <Navigate to="/" replace />;
+}
+
 function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
 
@@ -144,6 +150,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <SettingsProvider>
+          <FeatureFlagsProvider>
           <AIProvider>
           <BrowserRouter>
             <RangeSliderSync />
@@ -156,7 +163,7 @@ function App() {
                 <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/portfolio" element={<PortfolioLibraryPage />} />
-              <Route path="/ai" element={<AIHomePage />} />
+              <Route path="/ai" element={<AIEnabledRoute />} />
               <Route path="/invest" element={<CategoryPage category="invest" />} />
               <Route path="/plan" element={<CategoryPage category="plan" />} />
               <Route path="/loans" element={<CategoryPage category="loans" />} />
@@ -202,6 +209,7 @@ function App() {
             )}
           </BrowserRouter>
           </AIProvider>
+          </FeatureFlagsProvider>
         </SettingsProvider>
       </AuthProvider>
     </ThemeProvider>
