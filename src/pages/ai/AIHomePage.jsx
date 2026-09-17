@@ -114,7 +114,7 @@ function EmptyState({ onAction, onPrompt }) {
 export default function AIHomePage() {
   const location = useLocation();
   const { user, token } = useAuth();
-  const { context, prepareContext, clearContext } = useAIContext();
+  const { context, prepareContext } = useAIContext();
   const [chats, setChats] = useState([]);
   const [chat, setChat] = useState(null);
   const [query, setQuery] = useState('');

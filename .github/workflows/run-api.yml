@@ -1,0 +1,12 @@
+name: Run API Every 13 Mins
+on:
+  schedule:
+    # Runs every 13 minutes using standard cron (resets at the hour)
+    - cron: '*/13 * * * *'
+
+jobs:
+  trigger-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call API
+        run: curl -X POST https://fincalc-api-l738.onrender.com
